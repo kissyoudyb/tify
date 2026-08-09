@@ -6,7 +6,9 @@ on:
   pull_request:
     branches: [main]
 
-# 同一个 workflow run 不能两个 job 都跑同一工件；用 needs 串行
+# 内部模块 com.hify:* SNAPSHOT 只存在于本机私有 m2(Nexus 上 404),
+# 云端/全新 runner 直接 mvn test 解析不到依赖,因此 unit/integration
+# 都从仓库根目录用 reactor 构建(-pl xxx -am 自动把依赖模块纳入同一构建)。
 jobs:
   unit:
     name: Unit tests (B1-B2)
@@ -31,8 +33,7 @@ jobs:
             ${{ runner.os }}-m2-
 
       - name: Run hify-provider unit tests (B1-B2)
-        working-directory: hify-provider
-        run: mvn -B test -o 2>&1 || mvn -B test
+        run: mvn -B -pl hify-provider -am test -o 2>&1 || mvn -B -pl hify-provider -am test
 
   integration:
     name: Integration tests (B3-B6)
@@ -59,14 +60,17 @@ jobs:
 
       - name: Verify K8s middleware is reachable
         run: |
-          if [ -z "$KUBECONFIG_PATH" ]; then
-            echo "::warning::KUBECONFIG_PATH not set; runner must have kubectl access to MySQL/Redis/pgvector"
-          fi
-          echo "Will rely on runner's local K8s + port-forward to 13306/16379/15432"
+          for p in 13306 16379 15432; do
+            if (echo > /dev/tcp/127.0.0.1/$p) >/dev/null 2>&1; then
+              echo "port $p OK"
+            else
+              echo "port $p CLOSED (需要 kubectl port-forward, namespace hify)"
+              exit 1
+            fi
+          done
 
       - name: Run hify-app integration tests (B3-B6)
-        working-directory: hify-app
-        run: mvn -B test -o 2>&1 || mvn -B test
+        run: mvn -B -pl hify-app -am test -o 2>&1 || mvn -B -pl hify-app -am test
 
       - name: Publish test report
         if: always()

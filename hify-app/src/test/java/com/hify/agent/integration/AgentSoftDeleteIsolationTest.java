@@ -117,8 +117,7 @@ class AgentSoftDeleteIsolationTest {
     @Test
     @DisplayName("#5b · delete(id) 后 list() 不应再包含该 agent（@TableLogic 在 SQL 阶段生效）")
     void deleteAfter_listExcludesDeleted() {
-        com.hify.common.dto.Result<PageResult<AgentListItem>> beforeResult = agentService.list(new AgentQueryRequest());
-        PageResult<AgentListItem> before = beforeResult.getData();
+        PageResult<AgentListItem> before = agentService.list(new AgentQueryRequest());
 
         // 找到我刚 insert 的 agent
         AgentListItem myRow = before.getList().stream()
@@ -128,8 +127,7 @@ class AgentSoftDeleteIsolationTest {
         agentService.delete(inserted.getId());
 
         // 再次 list
-        com.hify.common.dto.Result<PageResult<AgentListItem>> afterResult = agentService.list(new AgentQueryRequest());
-        PageResult<AgentListItem> after = afterResult.getData();
+        PageResult<AgentListItem> after = agentService.list(new AgentQueryRequest());
 
         boolean stillThere = after.getList().stream()
             .anyMatch(a -> a.getId().equals(inserted.getId()));
