@@ -25,7 +25,7 @@ public class ProviderController {
 
     @GetMapping
     public Result<PageResult<ProviderDetailResponse>> list(ProviderQueryRequest request) {
-        return providerService.list(request);
+        return Result.ok(providerService.list(request));
     }
 
     @GetMapping("/{id}")

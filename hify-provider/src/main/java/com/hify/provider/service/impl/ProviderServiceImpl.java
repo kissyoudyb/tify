@@ -111,7 +111,7 @@ public class ProviderServiceImpl implements ProviderService {
 
     @Override
     @Cacheable(cacheNames = "provider-cache", key = "'list'")
-    public Result<PageResult<ProviderDetailResponse>> list(ProviderQueryRequest request) {
+    public PageResult<ProviderDetailResponse> list(ProviderQueryRequest request) {
         LambdaQueryWrapper<Provider> wrapper = new LambdaQueryWrapper<Provider>()
             .eq(StringUtils.hasText(request.getType()), Provider::getType, request.getType())
             .eq(request.getEnabled() != null, Provider::getEnabled, request.getEnabled())
@@ -124,13 +124,14 @@ public class ProviderServiceImpl implements ProviderService {
             List<ModelConfig> models = modelConfigMapper.selectList(
                 new LambdaQueryWrapper<ModelConfig>()
                     .eq(ModelConfig::getProviderId, provider.getId())
+                    .eq(ModelConfig::getEnabled, 1)
                     .orderByAsc(ModelConfig::getCreatedAt)
             );
             ProviderHealth health = providerHealthMapper.findByProviderId(provider.getId()).orElse(null);
             return ProviderDetailResponse.from(provider, models, health);
         }).collect(Collectors.toList());
 
-        return PageResult.of(items, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
+        return new PageResult<>(items, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
     }
 
     @Override

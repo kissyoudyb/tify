@@ -135,7 +135,7 @@ public class AgentServiceImpl implements AgentService {
 
     @Override
     @Cacheable(cacheNames = "agent-cache", key = "'list'")
-    public Result<PageResult<AgentListItem>> list(AgentQueryRequest request) {
+    public PageResult<AgentListItem> list(AgentQueryRequest request) {
         LambdaQueryWrapper<Agent> wrapper = new LambdaQueryWrapper<Agent>()
             .eq(request.getEnabled() != null, Agent::getEnabled, request.getEnabled())
             .orderByDesc(Agent::getCreatedAt);
@@ -152,7 +152,7 @@ public class AgentServiceImpl implements AgentService {
             .map(agent -> AgentListItem.from(agent, toolCountMap.getOrDefault(agent.getId(), 0)))
             .collect(Collectors.toList());
 
-        return PageResult.of(items, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
+        return new PageResult<>(items, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
     }
 
     // ── 内部工具 ─────────────────────────────────────────────

@@ -78,21 +78,25 @@ CREATE TABLE IF NOT EXISTS mcp_server (
 -- Agent 配置
 -- ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS agent (
-    id                BIGINT          NOT NULL AUTO_INCREMENT COMMENT '主键',
-    name              VARCHAR(100)    NOT NULL                COMMENT 'Agent 名称',
-    description       VARCHAR(500)    DEFAULT ''              COMMENT '描述',
-    system_prompt     TEXT            DEFAULT ''              COMMENT 'System Prompt',
-    model_config_id   BIGINT          NOT NULL                COMMENT '绑定的模型配置 id',
-    temperature       DECIMAL(3,2)    NOT NULL DEFAULT 0.70   COMMENT '温度参数 0.00~1.00',
-    max_tokens        INT             NOT NULL DEFAULT 2048   COMMENT '最大输出 token 数',
-    max_context_turns INT             NOT NULL DEFAULT 10     COMMENT '保留最近几轮上下文',
-    enabled           TINYINT(1)      NOT NULL DEFAULT 1      COMMENT '是否启用',
-    deleted           TINYINT(1)      NOT NULL DEFAULT 0      COMMENT '逻辑删除',
-    created_at        DATETIME        NOT NULL                COMMENT '创建时间',
-    updated_at        DATETIME        NOT NULL                COMMENT '更新时间',
+    id                  BIGINT          NOT NULL AUTO_INCREMENT COMMENT '主键',
+    name                VARCHAR(100)    NOT NULL                COMMENT 'Agent 名称',
+    description         VARCHAR(500)    DEFAULT ''              COMMENT '描述',
+    system_prompt       TEXT                                   COMMENT 'System Prompt（TEXT 不能有默认值）',
+    model_config_id     BIGINT          NOT NULL                COMMENT '绑定的模型配置 id',
+    temperature         DECIMAL(3,2)    NOT NULL DEFAULT 0.70   COMMENT '温度参数 0.00~1.00',
+    max_tokens          INT             NOT NULL DEFAULT 2048   COMMENT '最大输出 token 数',
+    max_context_turns   INT             NOT NULL DEFAULT 10     COMMENT '保留最近几轮上下文',
+    enabled             TINYINT(1)      NOT NULL DEFAULT 1      COMMENT '是否启用',
+    knowledge_base_id   BIGINT          DEFAULT NULL            COMMENT '绑定的知识库 id，NULL = 不启用 RAG（FK → knowledge_base.id）',
+    workflow_id         BIGINT          DEFAULT NULL            COMMENT '绑定的工作流 id，NULL = 不启用工作流（FK → workflow.id）',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0      COMMENT '逻辑删除',
+    created_at          DATETIME        NOT NULL                COMMENT '创建时间',
+    updated_at          DATETIME        NOT NULL                COMMENT '更新时间',
     PRIMARY KEY (id),
     UNIQUE KEY idx_agent_name (name),
-    KEY idx_agent_model_config_id (model_config_id)
+    KEY idx_agent_model_config_id (model_config_id),
+    KEY idx_agent_knowledge_base_id (knowledge_base_id),
+    KEY idx_agent_workflow_id (workflow_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Agent 配置';
 
 -- ─────────────────────────────────────────────
@@ -141,3 +145,38 @@ CREATE TABLE IF NOT EXISTS chat_message (
     PRIMARY KEY (id),
     KEY idx_chat_message_session_id (session_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='对话消息';
+
+-- ─────────────────────────────────────────────
+-- 知识库
+-- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS knowledge_base (
+    id          BIGINT          NOT NULL AUTO_INCREMENT COMMENT '主键',
+    name        VARCHAR(100)    NOT NULL                COMMENT '知识库名称',
+    description VARCHAR(500)    DEFAULT ''              COMMENT '描述',
+    enabled     TINYINT(1)      NOT NULL DEFAULT 1      COMMENT '是否启用',
+    deleted     TINYINT(1)      NOT NULL DEFAULT 0      COMMENT '逻辑删除',
+    created_at  DATETIME        NOT NULL                COMMENT '创建时间',
+    updated_at  DATETIME        NOT NULL                COMMENT '更新时间',
+    PRIMARY KEY (id),
+    KEY idx_knowledge_base_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='知识库';
+
+-- ─────────────────────────────────────────────
+-- 文档
+-- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS document (
+    id               BIGINT          NOT NULL AUTO_INCREMENT COMMENT '主键',
+    knowledge_base_id BIGINT        NOT NULL                COMMENT '所属知识库 id（FK → knowledge_base.id）',
+    name             VARCHAR(255)    NOT NULL                COMMENT '文件名',
+    file_type        VARCHAR(50)     DEFAULT ''              COMMENT '文件类型（如 pdf / docx / md）',
+    file_size        BIGINT          NOT NULL DEFAULT 0      COMMENT '字节数',
+    status           VARCHAR(20)     NOT NULL DEFAULT 'PENDING' COMMENT '状态：PENDING / PROCESSING / DONE / FAILED',
+    error_message    VARCHAR(1000)   DEFAULT ''              COMMENT '处理失败原因',
+    chunk_count      INT             NOT NULL DEFAULT 0      COMMENT '切分块数',
+    deleted          TINYINT(1)      NOT NULL DEFAULT 0      COMMENT '逻辑删除',
+    created_at       DATETIME        NOT NULL                COMMENT '创建时间',
+    updated_at       DATETIME        NOT NULL                COMMENT '更新时间',
+    PRIMARY KEY (id),
+    KEY idx_document_kb_id (knowledge_base_id),
+    KEY idx_document_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文档';

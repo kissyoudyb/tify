@@ -21,7 +21,7 @@ public interface ProviderService {
 
     ProviderDetailResponse getDetail(Long id);
 
-    Result<PageResult<ProviderDetailResponse>> list(ProviderQueryRequest request);
+    PageResult<ProviderDetailResponse> list(ProviderQueryRequest request);
 
     /** 跨模块调用：校验 modelConfigId 存在且已启用 */
     ModelConfig getEnabledModelConfigOrThrow(Long modelConfigId);

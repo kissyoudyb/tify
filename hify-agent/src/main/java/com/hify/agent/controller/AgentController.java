@@ -22,7 +22,7 @@ public class AgentController {
 
     @GetMapping
     public Result<PageResult<AgentListItem>> list(AgentQueryRequest request) {
-        return agentService.list(request);
+        return Result.ok(agentService.list(request));
     }
 
     @GetMapping("/{id}")

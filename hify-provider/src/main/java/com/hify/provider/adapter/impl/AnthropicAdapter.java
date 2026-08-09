@@ -227,9 +227,30 @@ public class AnthropicAdapter implements ProviderAdapter {
     }
 
     private String getAuth(Map<String, Object> auth, String key) {
-        if (auth == null || !auth.containsKey(key) || auth.get(key) == null) {
+        if (auth == null) {
             throw new IllegalArgumentException("authConfig 缺少字段：" + key);
         }
-        return auth.get(key).toString();
+        Object value = auth.get(key);
+        if (value == null) {
+            value = auth.get(toSnakeCase(key));
+        }
+        if (value == null) {
+            throw new IllegalArgumentException("authConfig 缺少字段：" + key);
+        }
+        return value.toString();
+    }
+
+    private String toSnakeCase(String camel) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < camel.length(); i++) {
+            char c = camel.charAt(i);
+            if (Character.isUpperCase(c)) {
+                if (i > 0) sb.append('_');
+                sb.append(Character.toLowerCase(c));
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
     }
 }

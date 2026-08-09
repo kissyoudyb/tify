@@ -180,10 +180,32 @@ public class OpenAiAdapter implements ProviderAdapter {
 
     protected String getAuth(Provider provider, String key) {
         Map<String, Object> auth = provider.getAuthConfig();
-        if (auth == null || !auth.containsKey(key) || auth.get(key) == null) {
+        if (auth == null) {
             throw new IllegalArgumentException("authConfig 缺少字段：" + key);
         }
-        return auth.get(key).toString();
+        // 同时支持 camelCase（apiKey）和 snake_case（api_key），前端两种命名都见过
+        Object value = auth.get(key);
+        if (value == null) {
+            value = auth.get(toSnakeCase(key));
+        }
+        if (value == null) {
+            throw new IllegalArgumentException("authConfig 缺少字段：" + key);
+        }
+        return value.toString();
+    }
+
+    private String toSnakeCase(String camel) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < camel.length(); i++) {
+            char c = camel.charAt(i);
+            if (Character.isUpperCase(c)) {
+                if (i > 0) sb.append('_');
+                sb.append(Character.toLowerCase(c));
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
     }
 
     protected int parseDataArraySize(String body) {

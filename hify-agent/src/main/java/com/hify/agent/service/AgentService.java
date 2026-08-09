@@ -16,5 +16,5 @@ public interface AgentService {
 
     AgentDetailResponse getDetail(Long id);
 
-    Result<PageResult<AgentListItem>> list(AgentQueryRequest request);
+    PageResult<AgentListItem> list(AgentQueryRequest request);
 }
