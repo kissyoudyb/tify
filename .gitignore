@@ -1,0 +1,35 @@
+# Build artifacts
+target/
+node_modules/
+*.class
+*.jar
+*.war
+*.ear
+*.classpath
+*.project
+*.settings/
+*.idea/
+*.iml
+*.vscode/
+
+# Logs
+*.log
+logs/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+*.stackdump
+*.swp
+*.swo
+
+# Tool caches
+.playwright-mcp/
+.claude/
+.hify-cache/
+
+# Local config (never commit secrets)
+.env
+.env.local
+src/main/resources/application-local.yml
+src/main/resources/application-local.properties
