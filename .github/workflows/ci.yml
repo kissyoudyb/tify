@@ -42,12 +42,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
+      # runner 机器已按文档 §2.1 装好 JDK 17(Maven 3.9.9 + OpenJDK 17),
+      # 不再由 setup-java 下载,避免自托管 runner 每次从 GitHub CDN 拉 JDK。
       - name: Cache Maven dependencies
         uses: actions/cache@v4
         with:
