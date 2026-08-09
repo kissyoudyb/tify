@@ -3,7 +3,6 @@ package com.hify.provider.integration;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.hify.app.HifyApplication;
 import com.hify.provider.adapter.ProviderAdapter;
-import com.hify.provider.adapter.ProviderAdapterFactory;
 import com.hify.provider.dto.ConnectionTestResult;
 import com.hify.provider.entity.ModelConfig;
 import com.hify.provider.entity.Provider;
@@ -22,7 +21,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
@@ -38,7 +36,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(
@@ -56,18 +53,15 @@ class ProviderConnectionTestServiceIntegrationTest {
     @Autowired ProviderHealthMapper healthMapper;
     @Autowired ModelConfigMapper modelConfigMapper;
     @Autowired CacheManager cacheManager;
-    @Autowired ApplicationContext ctx;
 
-    private ProviderAdapter adapterMock = mock(ProviderAdapter.class);
-    private ProviderAdapterFactory adapterFactory;
+    @Autowired
+    @Qualifier("mockProviderAdapter")
+    private ProviderAdapter adapterMock;
 
     private Provider inserted;
 
     @BeforeEach
     void setUp() {
-        adapterFactory = ctx.getBean("providerAdapterFactoryOverride", ProviderAdapterFactory.class);
-        injectMockFactoryIntoService(service, adapterFactory);
-        when(adapterFactory.get(any())).thenReturn(adapterMock);
 
         Provider p = new Provider();
         p.setName("test-provider-" + System.nanoTime());
@@ -93,15 +87,6 @@ class ProviderConnectionTestServiceIntegrationTest {
         if (cache != null) cache.clear();
     }
 
-    private void injectMockFactoryIntoService(ProviderConnectionTestService svc, ProviderAdapterFactory mock) {
-        try {
-            var f = ProviderConnectionTestService.class.getDeclaredField("adapterFactory");
-            f.setAccessible(true);
-            f.set(svc, mock);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     @Test
     @DisplayName("#1a · success 路径：provider_health 新增一行 status=UP, failCount=0, latencyMs=正确")
