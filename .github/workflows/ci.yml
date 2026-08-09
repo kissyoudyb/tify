@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# 同一个 workflow run 不能两个 job 都跑同一工件；用 needs 串行
+jobs:
+  unit:
+    name: Unit tests (B1-B2)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ./**/target
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-m2-
+
+      - name: Run hify-provider unit tests (B1-B2)
+        working-directory: hify-provider
+        run: mvn -B test -o 2>&1 || mvn -B test
+
+  integration:
+    name: Integration tests (B3-B6)
+    needs: unit
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ./**/target
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-m2-
+
+      - name: Verify K8s middleware is reachable
+        run: |
+          if [ -z "$KUBECONFIG_PATH" ]; then
+            echo "::warning::KUBECONFIG_PATH not set; runner must have kubectl access to MySQL/Redis/pgvector"
+          fi
+          echo "Will rely on runner's local K8s + port-forward to 13306/16379/15432"
+
+      - name: Run hify-app integration tests (B3-B6)
+        working-directory: hify-app
+        run: mvn -B test -o 2>&1 || mvn -B test
+
+      - name: Publish test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: |
+            hify-app/target/surefire-reports/
+            hify-provider/target/surefire-reports/
+          if-no-files-found: warn
