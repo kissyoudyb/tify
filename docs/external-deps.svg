@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 1100" font-family="-apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F8FAFC"/><stop offset="100%" stop-color="#EEF2F7"/>
+    </linearGradient>
+    <linearGradient id="grad-app" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E0E7FF"/><stop offset="100%" stop-color="#A5B4FC"/>
+    </linearGradient>
+    <linearGradient id="grad-java" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FEF3C7"/><stop offset="100%" stop-color="#FCD34D"/>
+    </linearGradient>
+    <linearGradient id="grad-mw" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#D1FAE5"/><stop offset="100%" stop-color="#6EE7B7"/>
+    </linearGradient>
+    <linearGradient id="grad-api" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFE4E6"/><stop offset="100%" stop-color="#FDA4AF"/>
+    </linearGradient>
+    <filter id="sh" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.15"/>
+    </filter>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+  </defs>
+
+  <rect width="1280" height="1100" fill="url(#bg)"/>
+  <text x="640" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#0F172A">Hify 外部依赖梳理</text>
+  <text x="640" y="56" text-anchor="middle" font-size="12" fill="#64748B">源：pom.xml · application.yml · README · CLAUDE.md</text>
+
+  <!-- ============ Center: Hify application ============ -->
+  <g filter="url(#sh)">
+    <rect x="490" y="430" width="300" height="220" rx="16" fill="url(#grad-app)" stroke="#4338CA" stroke-width="2"/>
+    <text x="640" y="465" text-anchor="middle" font-size="18" font-weight="700" fill="#1E1B4B">Hify</text>
+    <text x="640" y="485" text-anchor="middle" font-size="11" fill="#312E81">Spring Boot 3.2.3 · Java 17</text>
+
+    <line x1="510" y1="498" x2="770" y2="498" stroke="#6366F1" stroke-width="0.8" opacity="0.4"/>
+
+    <text x="640" y="520" text-anchor="middle" font-size="11" fill="#4338CA" font-weight="600">8 个内部模块</text>
+    <text x="640" y="538" text-anchor="middle" font-size="11" fill="#64748B">app · chat · agent · workflow</text>
+    <text x="640" y="555" text-anchor="middle" font-size="11" fill="#64748B">knowledge · provider · mcp · common</text>
+
+    <line x1="510" y1="568" x2="770" y2="568" stroke="#6366F1" stroke-width="0.8" opacity="0.4"/>
+
+    <text x="640" y="590" text-anchor="middle" font-size="11" fill="#4338CA" font-weight="600">接口边界</text>
+    <text x="640" y="608" text-anchor="middle" font-size="11" fill="#64748B">REST /api/v1/* · SSE 流式</text>
+    <text x="640" y="625" text-anchor="middle" font-size="11" fill="#64748B">MyBatis-Plus · Redis · pgvector</text>
+    <text x="640" y="642" text-anchor="middle" font-size="11" fill="#64748B">Resilience4j · OkHttp</text>
+  </g>
+
+  <!-- ============ Top: Java dependencies (amber) ============ -->
+  <g filter="url(#sh)">
+    <rect x="40" y="90" width="1200" height="280" rx="14" fill="url(#grad-java)" stroke="#B45309" stroke-width="1.5" opacity="0.4"/>
+    <text x="60" y="118" font-size="14" font-weight="700" fill="#78350F">📦 类别 1 · 关键 Java 依赖（pom.xml）</text>
+    <text x="60" y="135" font-size="11" fill="#92400E">运行时由 Maven 引入到 classpath</text>
+  </g>
+
+  <!-- Java dep cards -->
+  <g font-size="11">
+    <g transform="translate(60, 152)">
+      <rect width="220" height="62" rx="8" fill="white" stroke="#B45309" stroke-width="1"/>
+      <text x="14" y="22" font-weight="700" fill="#78350F">Spring Boot 3.2.3</text>
+      <text x="14" y="38" fill="#92400E">starter · web · validation</text>
+      <text x="14" y="52" fill="#92400E">data-redis · aop · actuator · test</text>
+    </g>
+    <g transform="translate(294, 152)">
+      <rect width="220" height="62" rx="8" fill="white" stroke="#B45309" stroke-width="1"/>
+      <text x="14" y="22" font-weight="700" fill="#78350F">MyBatis-Plus 3.5.9</text>
+      <text x="14" y="38" fill="#92400E">spring-boot3-starter</text>
+      <text x="14" y="52" fill="#92400E">jsqlparser（分页插件）</text>
+    </g>
+    <g transform="translate(528, 152)">
+      <rect width="220" height="62" rx="8" fill="white" stroke="#B45309" stroke-width="1"/>
+      <text x="14" y="22" font-weight="700" fill="#78350F">Resilience4j 2.2.0</text>
+      <text x="14" y="38" fill="#92400E">spring-boot3</text>
+      <text x="14" y="52" fill="#92400E">熔断 + 重试（LLM per-provider）</text>
+    </g>
+    <g transform="translate(762, 152)">
+      <rect width="220" height="62" rx="8" fill="white" stroke="#B45309" stroke-width="1"/>
+      <text x="14" y="22" font-weight="700" fill="#78350F">OkHttp 4.12.0</text>
+      <text x="14" y="38" fill="#92400E">同步 HTTP 客户端</text>
+      <text x="14" y="52" fill="#92400E">LLM API / 工作流 API_CALL</text>
+    </g>
+    <g transform="translate(996, 152)">
+      <rect width="220" height="62" rx="8" fill="white" stroke="#B45309" stroke-width="1"/>
+      <text x="14" y="22" font-weight="700" fill="#78350F">OpenTelemetry API 1.38.0</text>
+      <text x="14" y="38" fill="#92400E">traceId 生成</text>
+      <text x="14" y="52" fill="#92400E">仅 API，SDK 后续接 Jaeger</text>
+    </g>
+
+    <g transform="translate(60, 230)">
+      <rect width="220" height="62" rx="8" fill="white" stroke="#B45309" stroke-width="1"/>
+      <text x="14" y="22" font-weight="700" fill="#78350F">Micrometer 1.12.3</text>
+      <text x="14" y="38" fill="#92400E">micrometer-core（common）</text>
+      <text x="14" y="52" fill="#92400E">prometheus registry（app）</text>
+    </g>
+    <g transform="translate(294, 230)">
+      <rect width="220" height="62" rx="8" fill="white" stroke="#B45309" stroke-width="1"/>
+      <text x="14" y="22" font-weight="700" fill="#78350F">Logstash Logback 7.4</text>
+      <text x="14" y="38" fill="#92400E">JSON 结构化日志</text>
+      <text x="14" y="52" fill="#92400E">ELK / Loki 接入</text>
+    </g>
+    <g transform="translate(528, 230)">
+      <rect width="220" height="62" rx="8" fill="white" stroke="#B45309" stroke-width="1"/>
+      <text x="14" y="22" font-weight="700" fill="#78350F">pgvector JDBC 0.1.4</text>
+      <text x="14" y="38" fill="#92400E">向量类型映射</text>
+      <text x="14" y="52" fill="#92400E">仅 hify-knowledge</text>
+    </g>
+    <g transform="translate(762, 230)">
+      <rect width="220" height="62" rx="8" fill="white" stroke="#B45309" stroke-width="1"/>
+      <text x="14" y="22" font-weight="700" fill="#78350F">MCP Java SDK 1.1.1</text>
+      <text x="14" y="38" fill="#92400E">Model Context Protocol 官方</text>
+      <text x="14" y="52" fill="#92400E">仅 hify-mcp</text>
+    </g>
+    <g transform="translate(996, 230)">
+      <rect width="220" height="62" rx="8" fill="white" stroke="#B45309" stroke-width="1"/>
+      <text x="14" y="22" font-weight="700" fill="#78350F">MySQL Connector/J 8.3.0</text>
+      <text x="14" y="38" fill="#92400E">com.mysql:mysql-connector-j</text>
+      <text x="14" y="52" fill="#92400E">所有业务模块</text>
+    </g>
+
+    <g transform="translate(60, 308)">
+      <rect width="220" height="42" rx="8" fill="white" stroke="#B45309" stroke-width="1" stroke-dasharray="4 3"/>
+      <text x="14" y="20" font-weight="700" fill="#78350F">H2（mock profile 运行时）</text>
+      <text x="14" y="34" fill="#92400E">本地无 MySQL 时内存替代</text>
+    </g>
+    <g transform="translate(294, 308)">
+      <rect width="220" height="42" rx="8" fill="white" stroke="#B45309" stroke-width="1" stroke-dasharray="4 3"/>
+      <text x="14" y="20" font-weight="700" fill="#78350F">PostgreSQL JDBC</text>
+      <text x="14" y="34" fill="#92400E">pgvector 健康检查（仅 app）</text>
+    </g>
+    <g transform="translate(528, 308)">
+      <rect width="220" height="42" rx="8" fill="white" stroke="#B45309" stroke-width="1" stroke-dasharray="4 3"/>
+      <text x="14" y="20" font-weight="700" fill="#78350F">Lombok 1.18.30</text>
+      <text x="14" y="34" fill="#92400E">annotation processor（provided）</text>
+    </g>
+  </g>
+
+  <!-- Lines from Java deps to app -->
+  <g stroke="#B45309" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ah)">
+    <line x1="170" y1="214" x2="510" y2="450"/>
+    <line x1="404" y1="214" x2="530" y2="450"/>
+    <line x1="638" y1="214" x2="600" y2="450"/>
+    <line x1="872" y1="214" x2="650" y2="450"/>
+    <line x1="1106" y1="214" x2="700" y2="450"/>
+    <line x1="170" y1="292" x2="515" y2="475"/>
+    <line x1="404" y1="292" x2="540" y2="475"/>
+    <line x1="638" y1="292" x2="580" y2="475"/>
+    <line x1="872" y1="292" x2="660" y2="475"/>
+    <line x1="1106" y1="292" x2="710" y2="475"/>
+  </g>
+
+  <!-- ============ Bottom: Middleware (green) ============ -->
+  <g filter="url(#sh)">
+    <rect x="40" y="690" width="600" height="350" rx="14" fill="url(#grad-mw)" stroke="#047857" stroke-width="1.5" opacity="0.4"/>
+    <text x="60" y="718" font-size="14" font-weight="700" fill="#064E3B">🗄️ 类别 2 · 中间件（运行时服务）</text>
+    <text x="60" y="735" font-size="11" fill="#065F46">docker-compose / application.yml 配置</text>
+  </g>
+
+  <g font-size="11">
+    <g transform="translate(80, 758)">
+      <rect width="260" height="68" rx="8" fill="white" stroke="#047857" stroke-width="1.2"/>
+      <ellipse cx="20" cy="20" rx="14" ry="5" fill="white" stroke="#047857" stroke-width="1.2"/>
+      <path d="M6,20 v22 a14,5 0 0 0 28,0 v-22" fill="white" stroke="#047857" stroke-width="1.2"/>
+      <ellipse cx="20" cy="42" rx="14" ry="5" fill="white" stroke="#047857" stroke-width="1.2"/>
+      <text x="46" y="22" font-weight="700" fill="#064E3B">MySQL 8.x</text>
+      <text x="46" y="40" fill="#065F46">业务数据持久化</text>
+      <text x="46" y="56" fill="#065F46">HikariCP 5-20 连接</text>
+    </g>
+    <g transform="translate(360, 758)">
+      <rect width="260" height="68" rx="8" fill="white" stroke="#047857" stroke-width="1.2"/>
+      <rect x="6" y="14" width="248" height="40" rx="6" fill="white" stroke="#047857" stroke-width="1.2"/>
+      <rect x="14" y="20" width="232" height="6" rx="2" fill="#6EE7B7"/>
+      <rect x="14" y="42" width="232" height="6" rx="2" fill="#6EE7B7"/>
+      <text x="130" y="36" text-anchor="middle" font-weight="700" fill="#064E3B">Redis 7.x</text>
+      <text x="130" y="49" text-anchor="middle" font-size="10" fill="#065F46">配置缓存 30min · 会话 2h</text>
+    </g>
+    <g transform="translate(80, 850)">
+      <rect width="260" height="68" rx="8" fill="white" stroke="#047857" stroke-width="1.2"/>
+      <polygon points="130,8 16,58 244,58" fill="white" stroke="#047857" stroke-width="1.2"/>
+      <polygon points="130,18 36,52 224,52" fill="#D1FAE5" stroke="#047857" stroke-width="0.8"/>
+      <text x="130" y="42" text-anchor="middle" font-weight="700" fill="#064E3B">pgvector</text>
+      <text x="130" y="64" text-anchor="middle" font-size="10" fill="#065F46">向量存储 + 相似度检索</text>
+    </g>
+    <g transform="translate(360, 850)">
+      <rect width="260" height="68" rx="8" fill="white" stroke="#047857" stroke-width="1.2"/>
+      <polygon points="130,10 230,40 130,58 30,40" fill="white" stroke="#047857" stroke-width="1.2"/>
+      <text x="130" y="32" text-anchor="middle" font-weight="700" fill="#064E3B">Nginx</text>
+      <text x="130" y="46" text-anchor="middle" font-size="10" fill="#065F46">静态托管 · API 反代</text>
+      <text x="130" y="58" text-anchor="middle" font-size="10" fill="#065F46">proxy_buffering off</text>
+    </g>
+    <g transform="translate(80, 942)">
+      <rect width="540" height="48" rx="8" fill="white" stroke="#047857" stroke-width="1.2" stroke-dasharray="4 3"/>
+      <text x="14" y="20" font-weight="700" fill="#064E3B">Docker + Kubernetes</text>
+      <text x="14" y="36" fill="#065F46">全部组件镜像化 · Docker Compose 本地起 · K8s 50 人规模部署</text>
+    </g>
+  </g>
+
+  <!-- Lines from middleware to app -->
+  <g stroke="#047857" stroke-width="1.4" marker-end="url(#ah)">
+    <line x1="210" y1="758" x2="540" y2="650"/>
+    <line x1="490" y1="758" x2="600" y2="650"/>
+    <line x1="210" y1="850" x2="540" y2="650"/>
+    <line x1="490" y1="850" x2="640" y2="650"/>
+    <line x1="350" y1="942" x2="640" y2="650"/>
+  </g>
+
+  <!-- ============ Right: External APIs (red) ============ -->
+  <g filter="url(#sh)">
+    <rect x="680" y="690" width="560" height="350" rx="14" fill="url(#grad-api)" stroke="#BE123C" stroke-width="1.5" opacity="0.4"/>
+    <text x="700" y="718" font-size="14" font-weight="700" fill="#881337">☁️ 类别 3 · 外部 API（出网调用）</text>
+    <text x="700" y="735" font-size="11" fill="#9F123D">hify-provider 适配 · hify-mcp 转发 · apiKey 由前端配置</text>
+  </g>
+
+  <g font-size="11">
+    <g transform="translate(720, 758)">
+      <rect width="240" height="68" rx="8" fill="white" stroke="#BE123C" stroke-width="1.2"/>
+      <text x="14" y="22" font-weight="700" fill="#881337">OpenAI</text>
+      <text x="14" y="40" fill="#9F123D">api.openai.com</text>
+      <text x="14" y="56" fill="#9F123D">GPT-4o / GPT-4-turbo 等</text>
+    </g>
+    <g transform="translate(980, 758)">
+      <rect width="240" height="68" rx="8" fill="white" stroke="#BE123C" stroke-width="1.2"/>
+      <text x="14" y="22" font-weight="700" fill="#881337">Anthropic Claude</text>
+      <text x="14" y="40" fill="#9F123D">api.anthropic.com</text>
+      <text x="14" y="56" fill="#9F123D">Claude 3.5 / Opus / Sonnet</text>
+    </g>
+    <g transform="translate(720, 840)">
+      <rect width="240" height="68" rx="8" fill="white" stroke="#BE123C" stroke-width="1.2"/>
+      <text x="14" y="22" font-weight="700" fill="#881337">Google Gemini</text>
+      <text x="14" y="40" fill="#9F123D">generativelanguage.googleapis.com</text>
+      <text x="14" y="56" fill="#9F123D">Gemini Pro / Flash</text>
+    </g>
+    <g transform="translate(980, 840)">
+      <rect width="240" height="68" rx="8" fill="white" stroke="#BE123C" stroke-width="1.2"/>
+      <text x="14" y="22" font-weight="700" fill="#881337">Ollama</text>
+      <text x="14" y="40" fill="#9F123D">http://localhost:11434</text>
+      <text x="14" y="56" fill="#9F123D">本地 Llama / Qwen 等</text>
+    </g>
+    <g transform="translate(720, 922)">
+      <rect width="500" height="68" rx="8" fill="white" stroke="#BE123C" stroke-width="1.2" stroke-dasharray="4 3"/>
+      <text x="14" y="22" font-weight="700" fill="#881337">MCP Servers（外部工具集）</text>
+      <text x="14" y="40" fill="#9F123D">JSON-RPC over HTTP/SSE · MCP Java SDK 1.1.1 序列化</text>
+      <text x="14" y="56" fill="#9F123D">配置存于 hify-mcp，延迟调用外部工具</text>
+    </g>
+    <g transform="translate(720, 1004)">
+      <rect width="500" height="22" rx="4" fill="white" stroke="#BE123C" stroke-width="1" opacity="0.7"/>
+      <text x="14" y="16" font-size="10" fill="#9F123D" font-style="italic">所有 LLM 调用走 Resilience4j 熔断 + 60s 超时 + 异常分类重试</text>
+    </g>
+  </g>
+
+  <!-- Lines from external API to app -->
+  <g stroke="#BE123C" stroke-width="1.4" marker-end="url(#ah)">
+    <line x1="840" y1="758" x2="760" y2="650"/>
+    <line x1="1100" y1="758" x2="780" y2="650"/>
+    <line x1="840" y1="840" x2="770" y2="650"/>
+    <line x1="1100" y1="840" x2="780" y2="650"/>
+    <line x1="970" y1="922" x2="780" y2="650"/>
+  </g>
+
+  <!-- ============ Legend ============ -->
+  <g transform="translate(40, 1000)">
+    <rect x="0" y="0" width="600" height="88" rx="10" fill="white" stroke="#94A3B8" opacity="0.95"/>
+    <text x="14" y="22" font-weight="700" fill="#0F172A">图例</text>
+
+    <g transform="translate(14,36)">
+      <rect width="18" height="14" rx="3" fill="url(#grad-java)" stroke="#B45309"/>
+      <text x="26" y="12" font-size="11" fill="#334155">关键 Java 依赖（pom.xml）</text>
+    </g>
+    <g transform="translate(220,36)">
+      <rect width="18" height="14" rx="3" fill="url(#grad-mw)" stroke="#047857"/>
+      <text x="26" y="12" font-size="11" fill="#334155">中间件（运行时服务）</text>
+    </g>
+    <g transform="translate(420,36)">
+      <rect width="18" height="14" rx="3" fill="url(#grad-api)" stroke="#BE123C"/>
+      <text x="26" y="12" font-size="11" fill="#334155">外部 API（出网调用）</text>
+    </g>
+
+    <g transform="translate(14,62)">
+      <line x1="0" y1="7" x2="30" y2="7" stroke="#B45309" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ah)"/>
+      <text x="38" y="11" font-size="11" fill="#334155">虚线 = Maven 编译期依赖</text>
+    </g>
+    <g transform="translate(220,62)">
+      <line x1="0" y1="7" x2="30" y2="7" stroke="#047857" stroke-width="1.4" marker-end="url(#ah)"/>
+      <text x="38" y="11" font-size="11" fill="#334155">实线 = 运行时连接</text>
+    </g>
+    <g transform="translate(420,62)">
+      <line x1="0" y1="7" x2="30" y2="7" stroke="#BE123C" stroke-width="1.4" marker-end="url(#ah)"/>
+      <text x="38" y="11" font-size="11" fill="#334155">实线 = HTTPS outbound</text>
+    </g>
+  </g>
+</svg>

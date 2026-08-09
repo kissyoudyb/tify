@@ -1,0 +1,59 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hify-pgvector-init
+  namespace: hify
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-pg
+          image: pgvector/pgvector:pg16
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              for i in $(seq 1 60); do
+                if pg_isready -h hify-pgvector -U "$POSTGRES_USER" -d "$POSTGRES_DB"; then
+                  echo "pgvector ready"
+                  exit 0
+                fi
+                echo "waiting... $i"
+                sleep 2
+              done
+              exit 1
+          envFrom:
+            - secretRef:
+                name: hify-pgvector-secret
+      containers:
+        - name: init-ext
+          image: pgvector/pgvector:pg16
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              echo "--- creating vector extension ---"
+              psql -h hify-pgvector -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+                -c "CREATE EXTENSION IF NOT EXISTS vector;"
+              # 顺手占位一张 document_chunk 表（生产 DDL 仍待补）
+              psql -h hify-pgvector -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
+              CREATE TABLE IF NOT EXISTS document_chunk (
+                  id BIGSERIAL PRIMARY KEY,
+                  document_id BIGINT NOT NULL,
+                  chunk_index INT NOT NULL,
+                  content TEXT NOT NULL,
+                  embedding vector(1536),
+                  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+              );
+              CREATE INDEX IF NOT EXISTS idx_document_chunk_doc_id ON document_chunk(document_id);
+              SQL
+              echo "--- done ---"
+              psql -h hify-pgvector -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\dt"
+              psql -h hify-pgvector -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\dx"
+          envFrom:
+            - secretRef:
+                name: hify-pgvector-secret

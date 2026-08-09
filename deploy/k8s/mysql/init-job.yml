@@ -1,0 +1,223 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hify-mysql-init
+  namespace: hify
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        # 等待 MySQL 真正接受 TCP 连接
+        - name: wait-mysql
+          image: mysql:8.0
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              for i in $(seq 1 60); do
+                if mysqladmin ping -h hify-mysql -uroot -p"$MYSQL_ROOT_PASSWORD" --silent; then
+                  echo "mysql ready"
+                  exit 0
+                fi
+                echo "waiting... $i"
+                sleep 2
+              done
+              exit 1
+          envFrom:
+            - secretRef:
+                name: hify-mysql-secret
+      containers:
+        - name: init-schema
+          image: mysql:8.0
+          # 把启动时挂在 /docker-entrypoint-initdb.d 的官方初始化跳过（库由 Env 变量已建），
+          # 这里手工灌入 schema.sql：先 CREATE DATABASE，再执行项目根的 DDL
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              echo "--- applying hify schema.sql ---"
+              mysql -h hify-mysql -uroot -p"$MYSQL_ROOT_PASSWORD" \
+                -e "CREATE DATABASE IF NOT EXISTS hify DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+              # schema.sql 顶部有 CREATE DATABASE / USE，重复执行一次无害
+              if [ -f /sql/schema.sql ]; then
+                mysql -h hify-mysql -uroot -p"$MYSQL_ROOT_PASSWORD" < /sql/schema.sql
+              else
+                echo "WARN: /sql/schema.sql not found, schema 留空"
+              fi
+              # 关键生产 DDL 缺口提醒
+              echo "--- NOTE: schema.sql only has 8 tables; knowledge/workflow DDL still missing in prod ---"
+              mysql -h hify-mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SHOW TABLES FROM hify;"
+          envFrom:
+            - secretRef:
+                name: hify-mysql-secret
+          volumeMounts:
+            - name: sql
+              mountPath: /sql
+      volumes:
+        - name: sql
+          configMap:
+            name: hify-mysql-schema
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hify-mysql-schema
+  namespace: hify
+data:
+  schema.sql: |
+    -- Hify DDL (copied from hify-app/src/main/resources/db/schema.sql)
+    -- NOTE: 生产 schema.sql 仅 8 张表，详见 docs/data-model.md ⚠
+    CREATE DATABASE IF NOT EXISTS hify DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    USE hify;
+
+    CREATE TABLE IF NOT EXISTS provider (
+        id          BIGINT          NOT NULL AUTO_INCREMENT COMMENT '主键',
+        name        VARCHAR(100)    NOT NULL                COMMENT '提供商展示名称，唯一',
+        type        VARCHAR(30)     NOT NULL                COMMENT '类型：OPENAI / ANTHROPIC / OLLAMA / AZURE_OPENAI / OPENAI_COMPATIBLE',
+        base_url    VARCHAR(500)    NOT NULL                COMMENT 'API 基础地址',
+        auth_config JSON            NOT NULL                COMMENT '鉴权配置，结构随 type 变化',
+        description VARCHAR(500)    DEFAULT ''              COMMENT '备注',
+        enabled     TINYINT(1)      NOT NULL DEFAULT 1      COMMENT '是否启用：1 启用 0 禁用',
+        deleted     TINYINT(1)      NOT NULL DEFAULT 0      COMMENT '逻辑删除：0 正常 1 删除',
+        created_at  DATETIME        NOT NULL                COMMENT '创建时间',
+        updated_at  DATETIME        NOT NULL                COMMENT '更新时间',
+        PRIMARY KEY (id),
+        UNIQUE KEY idx_provider_name (name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='模型提供商';
+
+    CREATE TABLE IF NOT EXISTS model_config (
+        id           BIGINT          NOT NULL AUTO_INCREMENT COMMENT '主键',
+        provider_id  BIGINT          NOT NULL                COMMENT '所属提供商 id',
+        name         VARCHAR(100)    NOT NULL                COMMENT '模型展示名称',
+        model_id     VARCHAR(100)    NOT NULL                COMMENT '调用 API 时实际传的模型标识',
+        context_size INT             NOT NULL DEFAULT 4096   COMMENT '上下文窗口（token）',
+        extra_params JSON                                    COMMENT '扩展参数',
+        enabled      TINYINT(1)      NOT NULL DEFAULT 1      COMMENT '是否启用',
+        deleted      TINYINT(1)      NOT NULL DEFAULT 0      COMMENT '逻辑删除',
+        created_at   DATETIME        NOT NULL                COMMENT '创建时间',
+        updated_at   DATETIME        NOT NULL                COMMENT '更新时间',
+        PRIMARY KEY (id),
+        KEY idx_model_config_provider_id (provider_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='模型配置';
+
+    CREATE TABLE IF NOT EXISTS provider_health (
+        id              BIGINT          NOT NULL AUTO_INCREMENT COMMENT '主键',
+        provider_id     BIGINT          NOT NULL                COMMENT '关联 provider.id',
+        status          VARCHAR(20)     NOT NULL DEFAULT 'UNKNOWN' COMMENT 'UP / DOWN / DEGRADED / UNKNOWN',
+        last_check_at   DATETIME                                COMMENT '最后探测时间',
+        last_success_at DATETIME                                COMMENT '最后成功时间',
+        fail_count      INT             NOT NULL DEFAULT 0      COMMENT '连续失败次数',
+        latency_ms      INT                                     COMMENT '最近延迟（ms）',
+        error_message   VARCHAR(500)                            COMMENT '最近失败原因',
+        updated_at      DATETIME        NOT NULL                COMMENT '更新时间',
+        PRIMARY KEY (id),
+        UNIQUE KEY idx_provider_health_provider_id (provider_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='供应商健康状态';
+
+    CREATE TABLE IF NOT EXISTS mcp_server (
+        id           BIGINT          NOT NULL AUTO_INCREMENT COMMENT '主键',
+        name         VARCHAR(100)    NOT NULL                COMMENT 'MCP Server 名称',
+        endpoint     VARCHAR(500)    NOT NULL                COMMENT '服务端点',
+        description  VARCHAR(500)    DEFAULT ''              COMMENT '描述',
+        enabled      TINYINT(1)      NOT NULL DEFAULT 1      COMMENT '是否启用',
+        deleted      TINYINT(1)      NOT NULL DEFAULT 0      COMMENT '逻辑删除',
+        created_at   DATETIME        NOT NULL                COMMENT '创建时间',
+        updated_at   DATETIME        NOT NULL                COMMENT '更新时间',
+        PRIMARY KEY (id),
+        UNIQUE KEY idx_mcp_server_name (name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='MCP 工具服务';
+
+    CREATE TABLE IF NOT EXISTS agent (
+        id                  BIGINT          NOT NULL AUTO_INCREMENT COMMENT '主键',
+        name                VARCHAR(100)    NOT NULL                COMMENT 'Agent 名称',
+        description         VARCHAR(500)    DEFAULT ''              COMMENT '描述',
+        system_prompt       TEXT                                   COMMENT 'System Prompt（TEXT 不能有默认值）',
+        model_config_id     BIGINT          NOT NULL                COMMENT '绑定的模型配置 id',
+        temperature         DECIMAL(3,2)    NOT NULL DEFAULT 0.70   COMMENT '温度 0.00~1.00',
+        max_tokens          INT             NOT NULL DEFAULT 2048   COMMENT '最大输出 token',
+        max_context_turns   INT             NOT NULL DEFAULT 10     COMMENT '保留最近几轮上下文',
+        enabled             TINYINT(1)      NOT NULL DEFAULT 1      COMMENT '是否启用',
+        knowledge_base_id   BIGINT          DEFAULT NULL            COMMENT '绑定的知识库 id，NULL = 不启用 RAG（FK → knowledge_base.id）',
+        workflow_id         BIGINT          DEFAULT NULL            COMMENT '绑定的工作流 id，NULL = 不启用工作流（FK → workflow.id）',
+        deleted             TINYINT(1)      NOT NULL DEFAULT 0      COMMENT '逻辑删除',
+        created_at          DATETIME        NOT NULL                COMMENT '创建时间',
+        updated_at          DATETIME        NOT NULL                COMMENT '更新时间',
+        PRIMARY KEY (id),
+        UNIQUE KEY idx_agent_name (name),
+        KEY idx_agent_model_config_id (model_config_id),
+        KEY idx_agent_knowledge_base_id (knowledge_base_id),
+        KEY idx_agent_workflow_id (workflow_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Agent 配置';
+
+    CREATE TABLE IF NOT EXISTS agent_tool (
+        id            BIGINT      NOT NULL AUTO_INCREMENT COMMENT '主键',
+        agent_id      BIGINT      NOT NULL                COMMENT 'Agent id',
+        mcp_server_id BIGINT      NOT NULL                COMMENT 'MCP Server id',
+        created_at    DATETIME    NOT NULL                COMMENT '创建时间',
+        updated_at    DATETIME    NOT NULL                COMMENT '更新时间',
+        PRIMARY KEY (id),
+        UNIQUE KEY idx_agent_tool_agent_mcp (agent_id, mcp_server_id),
+        KEY idx_agent_tool_mcp_server_id (mcp_server_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Agent 绑定工具';
+
+    CREATE TABLE IF NOT EXISTS chat_session (
+        id         BIGINT          NOT NULL AUTO_INCREMENT COMMENT '主键',
+        agent_id   BIGINT          NOT NULL                COMMENT '所属 Agent id',
+        title      VARCHAR(200)    DEFAULT ''              COMMENT '会话标题',
+        status     VARCHAR(20)     NOT NULL DEFAULT 'ACTIVE' COMMENT '状态：ACTIVE / ARCHIVED',
+        deleted    TINYINT(1)      NOT NULL DEFAULT 0      COMMENT '逻辑删除',
+        created_at DATETIME        NOT NULL                COMMENT '创建时间',
+        updated_at DATETIME        NOT NULL                COMMENT '更新时间',
+        PRIMARY KEY (id),
+        KEY idx_chat_session_agent_id (agent_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='对话会话';
+
+    CREATE TABLE IF NOT EXISTS chat_message (
+        id            BIGINT          NOT NULL AUTO_INCREMENT COMMENT '主键',
+        session_id    BIGINT          NOT NULL                COMMENT '所属会话 id',
+        role          VARCHAR(20)     NOT NULL                COMMENT '消息角色：user / assistant / system',
+        content       LONGTEXT        NOT NULL                COMMENT '消息内容',
+        tokens        INT             DEFAULT 0               COMMENT '消耗 token 数',
+        finish_reason VARCHAR(50)     DEFAULT ''              COMMENT 'LLM finish_reason',
+        latency_ms    INT             DEFAULT 0               COMMENT '首 token 到流结束耗时（ms）',
+        deleted       TINYINT(1)      NOT NULL DEFAULT 0      COMMENT '逻辑删除',
+        created_at    DATETIME        NOT NULL                COMMENT '创建时间',
+        updated_at    DATETIME        NOT NULL                COMMENT '更新时间',
+        PRIMARY KEY (id),
+        KEY idx_chat_message_session_id (session_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='对话消息';
+
+    -- 知识库
+    CREATE TABLE IF NOT EXISTS knowledge_base (
+        id          BIGINT          NOT NULL AUTO_INCREMENT COMMENT '主键',
+        name        VARCHAR(100)    NOT NULL                COMMENT '知识库名称',
+        description VARCHAR(500)    DEFAULT ''              COMMENT '描述',
+        enabled     TINYINT(1)      NOT NULL DEFAULT 1      COMMENT '是否启用',
+        deleted     TINYINT(1)      NOT NULL DEFAULT 0      COMMENT '逻辑删除',
+        created_at  DATETIME        NOT NULL                COMMENT '创建时间',
+        updated_at  DATETIME        NOT NULL                COMMENT '更新时间',
+        PRIMARY KEY (id),
+        KEY idx_knowledge_base_name (name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='知识库';
+
+    -- 文档
+    CREATE TABLE IF NOT EXISTS document (
+        id                 BIGINT        NOT NULL AUTO_INCREMENT COMMENT '主键',
+        knowledge_base_id  BIGINT        NOT NULL                COMMENT '所属知识库 id（FK → knowledge_base.id）',
+        name               VARCHAR(255)  NOT NULL                COMMENT '文件名',
+        file_type          VARCHAR(50)   DEFAULT ''              COMMENT '文件类型',
+        file_size          BIGINT        NOT NULL DEFAULT 0      COMMENT '字节数',
+        status             VARCHAR(20)   NOT NULL DEFAULT 'PENDING' COMMENT '状态：PENDING / PROCESSING / DONE / FAILED',
+        error_message      VARCHAR(1000) DEFAULT ''              COMMENT '处理失败原因',
+        chunk_count        INT           NOT NULL DEFAULT 0      COMMENT '切分块数',
+        deleted            TINYINT(1)    NOT NULL DEFAULT 0      COMMENT '逻辑删除',
+        created_at         DATETIME      NOT NULL                COMMENT '创建时间',
+        updated_at         DATETIME      NOT NULL                COMMENT '更新时间',
+        PRIMARY KEY (id),
+        KEY idx_document_kb_id (knowledge_base_id),
+        KEY idx_document_status (status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文档';
