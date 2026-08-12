@@ -33,7 +33,7 @@ spec:
 
       containers:
         - name: backend
-          image: registry.tjzs.com/phadagent/tify-backend:rename-tify-pending
+          image: registry.tjzs.com/phadagent/tify-backend:rename-tify-55ebb0e
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
