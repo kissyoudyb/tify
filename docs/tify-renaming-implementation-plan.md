@@ -8,7 +8,7 @@
 
 1. 使用 JDK 17 和 Maven 3.9.9 执行后端构建。
 2. 使用 Node.js 22、npm 10 执行前端构建。
-3. 启动 Podman machine，并登录 `registry.tjzs.com`。
+3. 使用本机 Podman machine 构建并推送应用镜像，Harbor 凭据只通过 Podman 登录使用。
 4. 使用指定 kubeconfig 检查集群、`nfs-csi` 存储类和 `30081` 端口占用。
 5. kubeconfig 和 Registry 凭据只在本机使用，不写入仓库。
 
@@ -86,11 +86,11 @@ kubectl --kubeconfig $kubeconfig ...
 2. 执行前端生产构建和 mock profile 健康检查。
 3. 重新生成 `tify-app.jar`、`tify-web/dist` 和 `dist/tify-<version>.tar.gz`。
 4. 检查 JAR、tar.gz 和静态资源内部命名。
-5. 完成配置提交后取得 Git 短 SHA，标签为 `rename-tify-<short-sha>`。
-6. 使用 Podman 构建并推送：
+5. 使用构建提交短 SHA `55ebb0e`，镜像标签为 `rename-tify-55ebb0e`。
+6. 在具备 Harbor 权限的构建机使用 Docker/Podman 构建并推送：
    - `registry.tjzs.com/phadagent/tify-backend:<tag>`
    - `registry.tjzs.com/phadagent/tify-frontend:<tag>`
-7. 将 Deployment 镜像占位标签更新为实际标签并提交。
+7. Deployment 已固定到实际标签；镜像推送完成后重新触发 rollout。
 
 ## 6. 验收与收尾
 
