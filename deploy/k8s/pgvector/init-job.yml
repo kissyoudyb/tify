@@ -28,6 +28,12 @@ spec:
           envFrom:
             - secretRef:
                 name: tify-pgvector-secret
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tify-pgvector-secret
+                  key: POSTGRES_PASSWORD
       containers:
         - name: init-ext
           image: registry.tjzs.com/library/pgvector:pg16
@@ -57,3 +63,9 @@ spec:
           envFrom:
             - secretRef:
                 name: tify-pgvector-secret
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tify-pgvector-secret
+                  key: POSTGRES_PASSWORD
