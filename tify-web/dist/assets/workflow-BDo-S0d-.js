@@ -1,0 +1,1 @@
+import{g as r,d as e,p as t}from"./request-CyBioCPV.js";function f(o){return r("/v1/workflows",{page:1,pageSize:20,...o})}function l(o){return r(`/v1/workflows/${o}`)}function n(o){return t("/v1/workflows",o)}function w(o){return e(`/v1/workflows/${o}`)}export{n as c,w as d,l as g,f as l};
