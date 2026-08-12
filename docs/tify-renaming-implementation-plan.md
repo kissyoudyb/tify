@@ -52,6 +52,7 @@
 - MySQL、Redis、pgvector 使用 `nfs-csi` PVC 和内部 Service DNS。
 - 前端 Service 使用 `NodePort 30081`，后端使用 `ClusterIP:8080`。
 - 后端与前端镜像固定到 `registry.tjzs.com/phadagent/*:rename-tify-<short-sha>`。
+- pgvector 使用 `registry.tjzs.com/library/pgvector:pg16`。
 - 监控文件只改名，不在本轮 apply。
 
 ### 4.2 Secret

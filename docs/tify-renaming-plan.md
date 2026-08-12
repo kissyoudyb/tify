@@ -38,6 +38,7 @@ Tify 是 Tianjisuan 内部学习型 AI Agent 平台。本规范约束代码、�
 - 使用 `C:\Users\HP\Documents\jenkins-secret\kubeconfig-phadagent-dev` 访问开发集群，所有命令显式传入 `--kubeconfig`。
 - 应用部署到 `tify` namespace；前端通过 `NodePort 30081` 暴露。
 - 镜像使用 `registry.tjzs.com/phadagent/tify-{backend|frontend}:rename-tify-<short-sha>`。
+- pgvector 镜像使用 `registry.tjzs.com/library/pgvector:pg16`。
 - MySQL、Redis、pgvector 使用全新 `nfs-csi` PVC，不执行历史数据备份或迁移。
 - Secret 在部署时随机生成，不向仓库提交真实凭据。
 - Pod、JVM、Spring JSON、JDBC 和数据库统一使用 `Asia/Shanghai`。
