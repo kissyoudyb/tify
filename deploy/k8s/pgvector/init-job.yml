@@ -10,7 +10,7 @@ spec:
       restartPolicy: OnFailure
       initContainers:
         - name: wait-pg
-          image: pgvector/pgvector:pg16
+          image: registry.tjzs.com/library/pgvector:pg16
           command:
             - sh
             - -c
@@ -30,7 +30,7 @@ spec:
                 name: tify-pgvector-secret
       containers:
         - name: init-ext
-          image: pgvector/pgvector:pg16
+          image: registry.tjzs.com/library/pgvector:pg16
           command:
             - sh
             - -c

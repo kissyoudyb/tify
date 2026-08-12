@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: pgvector
-          image: pgvector/pgvector:pg16
+          image: registry.tjzs.com/library/pgvector:pg16
           args: ["-c", "timezone=Asia/Shanghai"]
           envFrom:
             - secretRef:

@@ -16,12 +16,13 @@ spec:
     spec:
       containers:
         - name: redis
-          image: redis:7
+          image: redis:7-alpine
           command:
             - sh
             - -c
             - |
               # 用环境变量拼出带密码的 appendonly 配置
+              mkdir -p /usr/local/etc/redis
               cat > /usr/local/etc/redis/redis.conf <<EOF
               bind 0.0.0.0
               protected-mode no
