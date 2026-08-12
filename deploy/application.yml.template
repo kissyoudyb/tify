@@ -2,8 +2,11 @@ server:
   port: 8080
 
 spring:
+  jackson:
+    time-zone: Asia/Shanghai
+
   datasource:
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:hify}?useUnicode=true&characterEncoding=utf8mb4&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:tify}?useUnicode=true&characterEncoding=utf8mb4&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -44,17 +47,17 @@ resilience4j:
         wait-duration: 1s
         retry-exceptions:
           - java.net.SocketTimeoutException
-          - com.hify.common.http.LlmApiException
+          - com.phadcalc.llm.tify.common.http.LlmApiException
       rate-limit-retry:
         max-attempts: 3
         exponential-backoff-multiplier: 2
         wait-duration: 2s
         retry-exceptions:
-          - com.hify.common.http.LlmApiException
+          - com.phadcalc.llm.tify.common.http.LlmApiException
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
-  type-aliases-package: com.hify.*.entity
+  type-aliases-package: com.phadcalc.llm.tify.*.entity
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl

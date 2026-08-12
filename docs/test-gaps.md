@@ -1,4 +1,4 @@
-# Hify 测试缺口
+# Tify 测试缺口
 
 > 来源对照：`docs/critical-paths.md`（应测什么）× `docs/test-status.md`（现状 0 测试）
 > 原则：≤20 项，只列主链路上的缺口；追求"关键路径有兜底"，不追求覆盖率
@@ -15,7 +15,7 @@
 | 6 | **P0** | 7 | DELETE Agent 后，GET /chat/sessions?agentId={id} 仍返回历史 session | "逻辑删除穿透"是 critical-paths 标红的链路；改应用层外键校验逻辑时无回归保护 | **集成测试**（删 agent → 立即查 chat_session，断言返回旧 session 即视为暴露 bug） |
 | 7 | **P0** | 8 | `Result<PageResult<...>>` 永远不能进 `@Cacheable`（防御性约束） | 本会话 D3 直接原因；任何重构都可能把缓存的返回值改回去 | **Characterization Test**（反射扫所有 `@Cacheable` 方法，断言返回类型不含 `Result`） |
 | 8 | **P1** | 2 | ChatService.sendMessage() 多轮上下文窗口截断：history.length > agent.max_context_turns 时只取最近 N 轮 | max_context_turns 是 CLAUDE.md 重点策略，无测试守门易被改坏 | **单元测试**（mock chatMessageMapper，断言拼装的 prompt 长度） |
-| 9 | **P1** | 2 | ChatService.streamChat() 首 token latency + 流结束写 chat_message 一行 | 流式 SSE 是 hify-chat 唯一对外能力，没测试则 N+1 / 丢包都查不出 | **集成测试**（mock SSE emitter + 真实 MyBatis） |
+| 9 | **P1** | 2 | ChatService.streamChat() 首 token latency + 流结束写 chat_message 一行 | 流式 SSE 是 tify-chat 唯一对外能力，没测试则 N+1 / 丢包都查不出 | **集成测试**（mock SSE emitter + 真实 MyBatis） |
 | 10 | **P1** | 3 | POST /agents/{id}/tools 绑定：UK (agent_id, mcp_server_id) 重复绑定返 409 | M:N 关联表唯一约束是数据完整性核心 | **集成测试**（绑两次相同 tool，第二次应业务异常） |
 | 11 | **P1** | 3 | McpService.debugTool() 调用外部 MCP server 的 JSON-RPC 请求体格式 | MCP 协议细节由 SDK 处理，但请求体改造时易破协议 | **集成测试**（mock HTTP server，断言请求体含 `jsonrpc: "2.0"`、`method`、`params`） |
 | 12 | **P1** | 4 | KnowledgeService.uploadDocument() 异步分块 → document_chunk 写入 pgvector | RAG 全链路最薄弱环节，没人测意味着 vector 数据格式错了也没人发现 | **集成测试**（真实 pgvector，上传固定文本，断言 chunks 行数 + vector 维度） |

@@ -1,8 +1,8 @@
-# Hify 接口 Smoke Test 结果
+# Tify 接口 Smoke Test 结果
 
 > 时间：2026-08-08
 > 后端：`http://127.0.0.1:8080`（PID 12896，详见 `docs/startup-log.md`）
-> 中间件：K8s `hify` namespace（详见 `scripts/install-log.md`）
+> 中间件：K8s `tify` namespace（详见 `scripts/install-log.md`）
 > 工具：curl，JSON body 走 `-d` + `-H 'Content-Type: application/json'`
 
 ## 选定的 5 个核心接口
@@ -100,7 +100,7 @@ HTTP 200
 {"code":3001, "message":"模型配置不存在", "data":null}
 ```
 
-**根因**：`hify-provider` 模块的 `ProviderController` 没有 model_config 的 REST 端点（详见 `docs/api-list.md` §2，只有 6 个接口，全部围绕 `provider` 实体本身）。`model_config` 表在生产 schema.sql 里建了但没有 CRUD 入口，**没有任何 API 能创建第一条 model_config 记录**，因此 Agent 创建必然卡在"模型配置不存在"。
+**根因**：`tify-provider` 模块的 `ProviderController` 没有 model_config 的 REST 端点（详见 `docs/api-list.md` §2，只有 6 个接口，全部围绕 `provider` 实体本身）。`model_config` 表在生产 schema.sql 里建了但没有 CRUD 入口，**没有任何 API 能创建第一条 model_config 记录**，因此 Agent 创建必然卡在"模型配置不存在"。
 
 > 这是 `docs/api-list.md` 与 `docs/data-model.md` 之间的一个真实不一致：
 > 数据模型声明 `model_config` 是核心实体（有 provider_id FK），但 API 清单未暴露创建端点。
@@ -121,7 +121,7 @@ HTTP 200
 {"code":1999, "message":"系统内部错误", "data":null}
 ```
 
-后端日志根因（`/tmp/hify-app.log`）：
+后端日志根因（`/tmp/tify-app.log`）：
 
 ```
 ERROR c.h.c.e.GlobalExceptionHandler - 系统异常
@@ -130,7 +130,7 @@ ERROR c.h.c.e.GlobalExceptionHandler - 系统异常
         max_context_turns,enabled,knowledge_base_id,workflow_id,created_at,updated_at,deleted
         FROM agent WHERE id=? AND deleted=0
 ### Cause: java.sql.SQLSyntaxErrorException: Unknown column 'knowledge_base_id' in 'field list'
-    at com.hify.chat.service.impl.ChatServiceImpl.createSession(ChatServiceImpl.java:89)
+    at com.phadcalc.llm.tify.chat.service.impl.ChatServiceImpl.createSession(ChatServiceImpl.java:89)
 ```
 
 **根因**：`Agent` entity 类里有 `knowledgeBaseId` / `workflowId` 两个字段（CLAUDE.md 描述"绑定的知识库 id / 绑定的工作流 id，NULL 表示不启用"），MyBatis-Plus 自动生成的 SQL 包含这两列，但 `schema.sql` 的 `agent` 表 CREATE 语句里 **没有这两列**，DBA 也没补。Agent 创建走的是 entity 字段映射表，能 INSERT（部分字段容忍），但读取时按完整字段 SELECT 就报 Unknown column。

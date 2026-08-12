@@ -37,7 +37,7 @@
   </defs>
 
   <rect width="1500" height="1050" fill="url(#bg)"/>
-  <text x="750" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#0F172A">Hify 核心数据模型 ER 图</text>
+  <text x="750" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#0F172A">Tify 核心数据模型 ER 图</text>
   <text x="750" y="56" text-anchor="middle" font-size="12" fill="#64748B">12 个 entity 类 · 15 张表 · 外键在应用层维护 · 含 7 张生产 DDL 缺口表</text>
 
   <!-- ============================================================ -->

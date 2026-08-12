@@ -14,10 +14,13 @@ RUN npm run build
 FROM nginx:1.27-alpine
 
 # 删除默认配置
-RUN rm /etc/nginx/conf.d/default.conf
+RUN apk add --no-cache tzdata \
+    && rm /etc/nginx/conf.d/default.conf
 
 COPY --from=builder /build/dist /usr/share/nginx/html
-COPY deploy/docker/nginx.conf   /etc/nginx/conf.d/tify.conf
+COPY nginx.conf /etc/nginx/conf.d/tify.conf
+
+ENV TZ=Asia/Shanghai
 
 EXPOSE 80
 

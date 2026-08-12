@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main]
 
-# 内部模块 com.hify:* SNAPSHOT 只存在于本机私有 m2(Nexus 上 404),
+# 内部模块 com.phadcalc.llm.tify:* SNAPSHOT 只存在于本机私有 m2(Nexus 上 404),
 # 云端/全新 runner 直接 mvn test 解析不到依赖,因此 unit/integration
 # 都从仓库根目录用 reactor 构建(-pl xxx -am 自动把依赖模块纳入同一构建)。
 jobs:
@@ -32,8 +32,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-m2-
 
-      - name: Run hify-provider unit tests (B1-B2)
-        run: mvn -B -pl hify-provider -am test -o 2>&1 || mvn -B -pl hify-provider -am test
+      - name: Run tify-provider unit tests (B1-B2)
+        run: mvn -B -pl tify-provider -am test -o 2>&1 || mvn -B -pl tify-provider -am test
 
   integration:
     name: Integration tests (B3-B6)
@@ -60,13 +60,13 @@ jobs:
             if (echo > /dev/tcp/127.0.0.1/$p) >/dev/null 2>&1; then
               echo "port $p OK"
             else
-              echo "port $p CLOSED (需要 kubectl port-forward, namespace hify)"
+              echo "port $p CLOSED (需要 kubectl port-forward, namespace tify)"
               exit 1
             fi
           done
 
-      - name: Run hify-app integration tests (B3-B6)
-        run: mvn -B -pl hify-app -am test -o 2>&1 || mvn -B -pl hify-app -am test
+      - name: Run tify-app integration tests (B3-B6)
+        run: mvn -B -pl tify-app -am test -o 2>&1 || mvn -B -pl tify-app -am test
 
       - name: Publish test report
         if: always()
@@ -74,6 +74,6 @@ jobs:
         with:
           name: surefire-reports
           path: |
-            hify-app/target/surefire-reports/
-            hify-provider/target/surefire-reports/
+            tify-app/target/surefire-reports/
+            tify-provider/target/surefire-reports/
           if-no-files-found: warn

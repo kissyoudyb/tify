@@ -1,8 +1,8 @@
-# Hify 本地启动日志
+# Tify 本地启动日志
 
 > 时间：2026-08-08
 > 工具链：JDK 17.0.4.1（`D:\javatools\Java\jdk-17.0.4.1`） + Maven 3.9.9（`D:\javatools\apache-maven-3.9.9`）
-> 中间件：K8s 内（`hify` namespace，参见 `scripts/install-log.md`），通过 `kubectl port-forward` 暴露到本地
+> 中间件：K8s 内（`tify` namespace，参见 `scripts/install-log.md`），通过 `kubectl port-forward` 暴露到本地
 
 ## 1. 应用最终运行状态
 
@@ -45,22 +45,22 @@ export PATH="$JAVA_HOME/bin:/d/javatools/apache-maven-3.9.9/bin:$PATH"
 
 # 1. 把 K8s 内 3 个中间件映射到本地（详见 scripts/install-log.md）
 export KUBECONFIG="C:/Users/HP/Documents/jenkins-secret/kubeconfig-phadagent-wsl"
-nohup kubectl port-forward -n hify svc/hify-mysql    13306:3306  >/tmp/pf-mysql.log 2>&1 &
-nohup kubectl port-forward -n hify svc/hify-redis    16379:6379  >/tmp/pf-redis.log 2>&1 &
-nohup kubectl port-forward -n hify svc/hify-pgvector 15432:5432  >/tmp/pg-pf.log     2>&1 &
+nohup kubectl port-forward -n tify svc/tify-mysql    13306:3306  >/tmp/pf-mysql.log 2>&1 &
+nohup kubectl port-forward -n tify svc/tify-redis    16379:6379  >/tmp/pf-redis.log 2>&1 &
+nohup kubectl port-forward -n tify svc/tify-pgvector 15432:5432  >/tmp/pg-pf.log     2>&1 &
 disown -a
 sleep 3 && netstat -ano | grep -E "13306|16379|15432"   # 应都能 LISTENING
 
 # 2. 编译打 jar
 mvn clean install -DskipTests -B
-# → BUILD SUCCESS，hify-app/target/hify-app-0.0.1-SNAPSHOT.jar (~58MB)
+# → BUILD SUCCESS，tify-app/target/tify-app-0.0.1-SNAPSHOT.jar (~58MB)
 
 # 3. 启动应用
-DB_HOST=127.0.0.1 DB_PORT=13306 DB_NAME=hify DB_USERNAME=root DB_PASSWORD=hify_root_pw \
-REDIS_HOST=127.0.0.1 REDIS_PORT=16379 REDIS_PASSWORD=hify_redis_pw \
-PGVECTOR_HOST=127.0.0.1 PGVECTOR_PORT=15432 PGVECTOR_DB=hify PGVECTOR_USERNAME=hify PGVECTOR_PASSWORD=hify_pg_pw \
+DB_HOST=127.0.0.1 DB_PORT=13306 DB_NAME=tify DB_USERNAME=root DB_PASSWORD=tify_root_pw \
+REDIS_HOST=127.0.0.1 REDIS_PORT=16379 REDIS_PASSWORD=tify_redis_pw \
+PGVECTOR_HOST=127.0.0.1 PGVECTOR_PORT=15432 PGVECTOR_DB=tify PGVECTOR_USERNAME=tify PGVECTOR_PASSWORD=tify_pg_pw \
 SERVER_PORT=8080 \
-nohup java -Xms256m -Xmx512m -jar hify-app/target/hify-app-0.0.1-SNAPSHOT.jar > /tmp/hify-app.log 2>&1 &
+nohup java -Xms256m -Xmx512m -jar tify-app/target/tify-app-0.0.1-SNAPSHOT.jar > /tmp/tify-app.log 2>&1 &
 disown
 sleep 25 && curl -sS http://127.0.0.1:8080/api/v1/health
 # → {"status":"UP","components":{"mysql":"UP","redis":"UP","pgvector":"UP"}}
@@ -112,10 +112,10 @@ sleep 25 && curl -sS http://127.0.0.1:8080/api/v1/health
 **结果**：`mvn clean install -DskipTests` 在 2 分 2 秒内 BUILD SUCCESS，9 个模块全过：
 
 ```
-[INFO] hify ............................................... SUCCESS
-[INFO] hify-common ........................................ SUCCESS
-[INFO] hify-provider / hify-mcp / hify-agent / hify-knowledge / hify-workflow / hify-chat
-[INFO] hify-app ........................................... SUCCESS
+[INFO] tify ............................................... SUCCESS
+[INFO] tify-common ........................................ SUCCESS
+[INFO] tify-provider / tify-mcp / tify-agent / tify-knowledge / tify-workflow / tify-chat
+[INFO] tify-app ........................................... SUCCESS
 [INFO] BUILD SUCCESS
 ```
 
@@ -135,9 +135,9 @@ sleep 25 && curl -sS http://127.0.0.1:8080/api/v1/health
 
 | K8s service | 本地端口 |
 |---|---|
-| `hify-mysql.hify.svc.cluster.local:3306` | `127.0.0.1:13306` |
-| `hify-redis.hify.svc.cluster.local:6379` | `127.0.0.1:16379` |
-| `hify-pgvector.hify.svc.cluster.local:5432` | `127.0.0.1:15432` |
+| `tify-mysql.tify.svc.cluster.local:3306` | `127.0.0.1:13306` |
+| `tify-redis.tify.svc.cluster.local:6379` | `127.0.0.1:16379` |
+| `tify-pgvector.tify.svc.cluster.local:5432` | `127.0.0.1:15432` |
 
 启动时通过环境变量覆盖 `application.yml` 默认的 `${DB_HOST:localhost}` 等占位符。
 
@@ -156,7 +156,7 @@ Caused by: java.io.UnsupportedEncodingException: utf8mb4
 {"status":"DOWN","components":{"mysql":{"error":"Unsupported character encoding 'utf8mb4'","status":"DOWN"},"redis":"UP","pgvector":"UP"}}
 ```
 
-**根因**：MySQL Connector/J 的 `characterEncoding` 参数是 **Java charset 名字**（如 `UTF-8`、`GBK`），而不是 MySQL collation 名字（`utf8mb4` 是后者）。`hify-app/src/main/resources/application.yml` 里写错了。
+**根因**：MySQL Connector/J 的 `characterEncoding` 参数是 **Java charset 名字**（如 `UTF-8`、`GBK`），而不是 MySQL collation 名字（`utf8mb4` 是后者）。`tify-app/src/main/resources/application.yml` 里写错了。
 
 **修复**：把
 
@@ -178,7 +178,7 @@ characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci
 
 **症状**：第一次用 `&` 后台起 java，bash background task 退出时应用进程被杀。
 
-**修复**：用 `nohup java -jar ... >/tmp/hify-app.log 2>&1 & disown`，日志落到文件、bash 退出不影响。同样处理三个 `kubectl port-forward` 进程。
+**修复**：用 `nohup java -jar ... >/tmp/tify-app.log 2>&1 & disown`，日志落到文件、bash 退出不影响。同样处理三个 `kubectl port-forward` 进程。
 
 ---
 
@@ -187,16 +187,16 @@ characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci
 应用启动时通过环境变量传入：
 
 ```
-DB_HOST=127.0.0.1 DB_PORT=13306 DB_NAME=hify DB_USERNAME=root DB_PASSWORD=hify_root_pw
-REDIS_HOST=127.0.0.1 REDIS_PORT=16379 REDIS_PASSWORD=hify_redis_pw
-PGVECTOR_HOST=127.0.0.1 PGVECTOR_PORT=15432 PGVECTOR_DB=hify PGVECTOR_USERNAME=hify PGVECTOR_PASSWORD=hify_pg_pw
+DB_HOST=127.0.0.1 DB_PORT=13306 DB_NAME=tify DB_USERNAME=root DB_PASSWORD=tify_root_pw
+REDIS_HOST=127.0.0.1 REDIS_PORT=16379 REDIS_PASSWORD=tify_redis_pw
+PGVECTOR_HOST=127.0.0.1 PGVECTOR_PORT=15432 PGVECTOR_DB=tify PGVECTOR_USERNAME=tify PGVECTOR_PASSWORD=tify_pg_pw
 ```
 
 对应 K8s secret：
 
-- `hify-mysql-secret` → `MYSQL_ROOT_PASSWORD=hify_root_pw` / `MYSQL_USER=hify` / `MYSQL_PASSWORD=hify_pw`
-- `hify-redis-secret` → `REDIS_PASSWORD=hify_redis_pw`
-- `hify-pgvector-secret` → `POSTGRES_USER=hify` / `POSTGRES_PASSWORD=hify_pg_pw`
+- `tify-mysql-secret` → `MYSQL_ROOT_PASSWORD=tify_root_pw` / `MYSQL_USER=tify` / `MYSQL_PASSWORD=tify_pw`
+- `tify-redis-secret` → `REDIS_PASSWORD=tify_redis_pw`
+- `tify-pgvector-secret` → `POSTGRES_USER=tify` / `POSTGRES_PASSWORD=tify_pg_pw`
 
 ---
 
@@ -208,7 +208,7 @@ PGVECTOR_HOST=127.0.0.1 PGVECTOR_PORT=15432 PGVECTOR_DB=hify PGVECTOR_USERNAME=h
 | MySQL port-forward | `kubectl.exe` PID 11132 → `127.0.0.1:13306` |
 | Redis port-forward | `kubectl.exe` PID 5560 → `127.0.0.1:16379` |
 | pgvector port-forward | `kubectl.exe` PID 26512 → `127.0.0.1:15432` |
-| 应用日志 | `/tmp/hify-app.log`（stdout/stderr 合并） |
+| 应用日志 | `/tmp/tify-app.log`（stdout/stderr 合并） |
 
 停止应用：
 
@@ -229,4 +229,4 @@ taskkill //F //IM kubectl.exe
 1. **MySQL 仅 8 张表**：RAG / Workflow 相关 7 张表仍按 `docs/data-model.md` 末尾说明未在生产 DDL，需业务模块就绪后补。
 2. **production secrets 明文**：本次为可复现性把密码写到 K8s Secret 明文 yml，生产前需迁移到 Vault 或 sealed-secrets。
 3. **本地 13306/16379/15432 端口占用**：如需重启 pf，先 `taskkill //F //IM kubectl.exe`。
-4. **MySQL root 密码不一致**：K8s secret 是 `hify_root_pw`，但 schema.sql 假定的 root 账号（env.template）是其他值；本次本地测试都用 K8s 设的值。生产部署前需统一。
+4. **MySQL root 密码不一致**：K8s secret 是 `tify_root_pw`，但 schema.sql 假定的 root 账号（env.template）是其他值；本次本地测试都用 K8s 设的值。生产部署前需统一。

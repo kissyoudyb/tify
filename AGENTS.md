@@ -1,4 +1,4 @@
-# Hify — Agent 入口指南
+# Tify — Agent 入口指南
 
 > 简版 AI Agent 开发平台（参考 Dify），本地部署，20–50 人规模。
 > 完整项目规范见 [`CLAUDE.md`](CLAUDE.md)；本文件只做精简导航。
@@ -23,14 +23,14 @@
 
 | 模块 | 一句话职责 |
 |---|---|
-| `hify-app` | Spring Boot 启动入口，引入所有业务模块 |
-| `hify-chat` | 对话引擎 · 流式 SSE · 多轮上下文 |
-| `hify-agent` | Agent 配置（绑模型 / 绑工具 / System Prompt） |
-| `hify-workflow` | 顺序 + 条件分支的工作流编排 |
-| `hify-knowledge` | RAG 文档摄入 + pgvector 检索 |
-| `hify-provider` | 多 LLM 提供商适配 + 熔断 |
-| `hify-mcp` | MCP 工具调用网关（外部 JSON-RPC） |
-| `hify-common` | 基类 / 异常 / 常量 / 工具（所有模块依赖） |
+| `tify-app` | Spring Boot 启动入口，引入所有业务模块 |
+| `tify-chat` | 对话引擎 · 流式 SSE · 多轮上下文 |
+| `tify-agent` | Agent 配置（绑模型 / 绑工具 / System Prompt） |
+| `tify-workflow` | 顺序 + 条件分支的工作流编排 |
+| `tify-knowledge` | RAG 文档摄入 + pgvector 检索 |
+| `tify-provider` | 多 LLM 提供商适配 + 熔断 |
+| `tify-mcp` | MCP 工具调用网关（外部 JSON-RPC） |
+| `tify-common` | 基类 / 异常 / 常量 / 工具（所有模块依赖） |
 
 ## 4. 关键约定
 
@@ -47,14 +47,14 @@
 ## 5. 怎么跑
 
 ```bash
-# 1. 编译（hify-* 互相依赖，先 install）
+# 1. 编译（tify-* 互相依赖，先 install）
 mvn clean install -DskipTests
 
 # 2. 启动后端（mock profile = H2 内存数据库，无需 MySQL）
-mvn spring-boot:run -pl hify-app -Dspring-boot.run.profiles=mock
+mvn spring-boot:run -pl tify-app -Dspring-boot.run.profiles=mock
 
 # 3. 启动前端
-cd hify-web && npm run dev
+cd tify-web && npm run dev
 
 # 4. 健康检查
 curl http://localhost:8080/api/v1/health

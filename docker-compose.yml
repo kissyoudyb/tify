@@ -1,18 +1,19 @@
 services:
 
-  backend:
+  tify-backend:
     build:
       context: .
       dockerfile: Dockerfile
-    image: hify-backend:latest
+    image: tify-backend:latest
     restart: unless-stopped
     environment:
       SERVER_PORT: 8080
-      JVM_OPTS: ${JVM_OPTS:--Xms256m -Xmx512m}
+      TZ: Asia/Shanghai
+      JVM_OPTS: ${JVM_OPTS:--Xms256m -Xmx512m -Duser.timezone=Asia/Shanghai}
       # MySQL
       DB_HOST:     ${DB_HOST}
       DB_PORT:     ${DB_PORT:-3306}
-      DB_NAME:     ${DB_NAME:-hify}
+      DB_NAME:     ${DB_NAME:-tify}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       # Redis
@@ -22,7 +23,7 @@ services:
       # pgvector
       PGVECTOR_HOST:     ${PGVECTOR_HOST}
       PGVECTOR_PORT:     ${PGVECTOR_PORT:-5432}
-      PGVECTOR_DB:       ${PGVECTOR_DB:-hify}
+      PGVECTOR_DB:       ${PGVECTOR_DB:-tify}
       PGVECTOR_USERNAME: ${PGVECTOR_USERNAME}
       PGVECTOR_PASSWORD: ${PGVECTOR_PASSWORD}
     ports:
@@ -38,22 +39,24 @@ services:
       start_period: 60s
       retries: 3
     networks:
-      - hify-net
+      - tify-net
 
-  frontend:
+  tify-frontend:
     build:
-      context: ./hify-web
+      context: ./tify-web
       dockerfile: Dockerfile
-    image: hify-frontend:latest
+    image: tify-frontend:latest
     restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
     ports:
       - "${FRONTEND_EXPOSE_PORT:-80}:80"
     depends_on:
-      backend:
+      tify-backend:
         condition: service_healthy
     networks:
-      - hify-net
+      - tify-net
 
 networks:
-  hify-net:
+  tify-net:
     driver: bridge

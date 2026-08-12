@@ -31,8 +31,8 @@
   </defs>
 
   <rect width="1100" height="720" fill="url(#bg)"/>
-  <text x="550" y="32" text-anchor="middle" font-size="20" font-weight="700" fill="#0F172A">Hify 内部模块依赖图</text>
-  <text x="550" y="52" text-anchor="middle" font-size="12" fill="#64748B">基于 pom.xml 实际依赖 · 仅 com.hify 模块 · 检测无循环</text>
+  <text x="550" y="32" text-anchor="middle" font-size="20" font-weight="700" fill="#0F172A">Tify 内部模块依赖图</text>
+  <text x="550" y="52" text-anchor="middle" font-size="12" fill="#64748B">基于 pom.xml 实际依赖 · 仅 com.phadcalc.llm.tify 模块 · 检测无循环</text>
 
   <!-- Layer band labels (left side) -->
   <g fill="#64748B" font-size="11" font-weight="600">
@@ -46,50 +46,50 @@
   <!-- Layer 1: common -->
   <g filter="url(#sh)">
     <rect x="430" y="105" width="220" height="60" rx="10" fill="url(#grad-common)" stroke="#6D28D9" stroke-width="1.5"/>
-    <text x="540" y="132" text-anchor="middle" font-weight="700" fill="#3B0764">hify-common</text>
+    <text x="540" y="132" text-anchor="middle" font-weight="700" fill="#3B0764">tify-common</text>
     <text x="540" y="150" text-anchor="middle" font-size="11" fill="#4C1D95">公共基类 / 异常 / 常量</text>
   </g>
 
   <!-- Layer 2: provider, mcp, knowledge -->
   <g filter="url(#sh)">
     <rect x="120" y="245" width="180" height="60" rx="10" fill="url(#grad-leaf)" stroke="#1D4ED8" stroke-width="1.5"/>
-    <text x="210" y="272" text-anchor="middle" font-weight="700" fill="#1E3A8A">hify-provider</text>
+    <text x="210" y="272" text-anchor="middle" font-weight="700" fill="#1E3A8A">tify-provider</text>
     <text x="210" y="290" text-anchor="middle" font-size="11" fill="#1E40AF">模型提供商适配</text>
   </g>
   <g filter="url(#sh)">
     <rect x="450" y="245" width="180" height="60" rx="10" fill="url(#grad-leaf)" stroke="#1D4ED8" stroke-width="1.5"/>
-    <text x="540" y="272" text-anchor="middle" font-weight="700" fill="#1E3A8A">hify-mcp</text>
+    <text x="540" y="272" text-anchor="middle" font-weight="700" fill="#1E3A8A">tify-mcp</text>
     <text x="540" y="290" text-anchor="middle" font-size="11" fill="#1E40AF">MCP 工具调用网关</text>
   </g>
   <g filter="url(#sh)">
     <rect x="780" y="245" width="180" height="60" rx="10" fill="url(#grad-leaf)" stroke="#1D4ED8" stroke-width="1.5"/>
-    <text x="870" y="272" text-anchor="middle" font-weight="700" fill="#1E3A8A">hify-knowledge</text>
+    <text x="870" y="272" text-anchor="middle" font-weight="700" fill="#1E3A8A">tify-knowledge</text>
     <text x="870" y="290" text-anchor="middle" font-size="11" fill="#1E40AF">RAG 知识库</text>
   </g>
 
   <!-- Layer 3: agent, workflow -->
   <g filter="url(#sh)">
     <rect x="230" y="395" width="200" height="60" rx="10" fill="url(#grad-mid)" stroke="#0E7490" stroke-width="1.5"/>
-    <text x="330" y="422" text-anchor="middle" font-weight="700" fill="#083344">hify-agent</text>
+    <text x="330" y="422" text-anchor="middle" font-weight="700" fill="#083344">tify-agent</text>
     <text x="330" y="440" text-anchor="middle" font-size="11" fill="#155E75">Agent 配置 · 绑模型/工具</text>
   </g>
   <g filter="url(#sh)">
     <rect x="650" y="395" width="200" height="60" rx="10" fill="url(#grad-mid)" stroke="#0E7490" stroke-width="1.5"/>
-    <text x="750" y="422" text-anchor="middle" font-weight="700" fill="#083344">hify-workflow</text>
+    <text x="750" y="422" text-anchor="middle" font-weight="700" fill="#083344">tify-workflow</text>
     <text x="750" y="440" text-anchor="middle" font-size="11" fill="#155E75">工作流编排执行</text>
   </g>
 
   <!-- Layer 4: chat -->
   <g filter="url(#sh)">
     <rect x="420" y="545" width="240" height="60" rx="10" fill="url(#grad-high)" stroke="#B45309" stroke-width="1.5"/>
-    <text x="540" y="572" text-anchor="middle" font-weight="700" fill="#78350F">hify-chat</text>
+    <text x="540" y="572" text-anchor="middle" font-weight="700" fill="#78350F">tify-chat</text>
     <text x="540" y="590" text-anchor="middle" font-size="11" fill="#92400E">对话引擎 · 流式响应</text>
   </g>
 
   <!-- Layer 5: app -->
   <g filter="url(#sh)">
     <rect x="420" y="625" width="240" height="50" rx="10" fill="url(#grad-app)" stroke="#B91C1C" stroke-width="1.5"/>
-    <text x="540" y="650" text-anchor="middle" font-weight="700" fill="#7F1D1D">hify-app</text>
+    <text x="540" y="650" text-anchor="middle" font-weight="700" fill="#7F1D1D">tify-app</text>
     <text x="540" y="666" text-anchor="middle" font-size="11" fill="#991B1B">Spring Boot 启动入口</text>
   </g>
 

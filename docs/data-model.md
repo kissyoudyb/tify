@@ -1,6 +1,6 @@
-# Hify 核心数据模型
+# Tify 核心数据模型
 
-> 来源：扫描 12 个 `*Entity.java` + `hify-app/src/main/resources/db/schema*.sql`。
+> 来源：扫描 12 个 `*Entity.java` + `tify-app/src/main/resources/db/schema*.sql`。
 > 全部表共 15 张，但 `schema.sql`（生产 MySQL）只 DDL 了 8 张；剩余 7 张目前仅在 H2 schema + 实体类中预留，**生产部署前需要补全 DDL**。
 
 ## 通用约定
@@ -15,7 +15,7 @@
 ---
 
 ## 1. provider · 模型提供商
-源：`hify-provider` `Provider.java` · `schema.sql:11`
+源：`tify-provider` `Provider.java` · `schema.sql:11`
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -30,7 +30,7 @@
 ---
 
 ## 2. model_config · 模型配置
-源：`hify-provider` `ModelConfig.java` · `schema.sql:29`
+源：`tify-provider` `ModelConfig.java` · `schema.sql:29`
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -47,7 +47,7 @@
 ---
 
 ## 3. provider_health · 供应商健康状态
-源：`hify-provider` `ProviderHealth.java` · `schema.sql:47`
+源：`tify-provider` `ProviderHealth.java` · `schema.sql:47`
 
 > 高频写入，**不继承 BaseEntity**，**无逻辑删除**
 
@@ -68,7 +68,7 @@
 ---
 
 ## 4. mcp_server · MCP 工具服务
-源：`hify-mcp` `McpServer.java` · `schema.sql:64`
+源：`tify-mcp` `McpServer.java` · `schema.sql:64`
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -81,7 +81,7 @@
 ---
 
 ## 5. agent · Agent 配置
-源：`hify-agent` `Agent.java` · `schema.sql:80`
+源：`tify-agent` `Agent.java` · `schema.sql:80`
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -100,7 +100,7 @@
 ---
 
 ## 6. agent_tool · Agent ↔ MCP Server 关联（M:N）
-源：`hify-agent` `AgentTool.java` · `schema.sql:101`
+源：`tify-agent` `AgentTool.java` · `schema.sql:101`
 
 > **不继承 BaseEntity**，无 `deleted`，无 `id` 以外的逻辑删除（直接物理删除）
 
@@ -116,7 +116,7 @@ UK: `(agent_id, mcp_server_id)` 唯一索引防重复绑定
 ---
 
 ## 7. chat_session · 对话会话
-源：`hify-chat` `ChatSession.java` · `schema.sql:115`
+源：`tify-chat` `ChatSession.java` · `schema.sql:115`
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -130,7 +130,7 @@ UK: `(agent_id, mcp_server_id)` 唯一索引防重复绑定
 ---
 
 ## 8. chat_message · 对话消息
-源：`hify-chat` `ChatMessage.java` · `schema.sql:130`
+源：`tify-chat` `ChatMessage.java` · `schema.sql:130`
 
 > **增长最快的表**，必须走 `idx_chat_message_session_id` + 游标分页，禁止 `SELECT COUNT(*)`
 
@@ -149,7 +149,7 @@ UK: `(agent_id, mcp_server_id)` 唯一索引防重复绑定
 ---
 
 ## 9. knowledge_base · 知识库
-源：`hify-knowledge` `KnowledgeBase.java` · ⚠️ **仅 H2 schema，未进生产 schema.sql**
+源：`tify-knowledge` `KnowledgeBase.java` · ⚠️ **仅 H2 schema，未进生产 schema.sql**
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -161,7 +161,7 @@ UK: `(agent_id, mcp_server_id)` 唯一索引防重复绑定
 ---
 
 ## 10. document · 文档
-源：`hify-knowledge` `Document.java` · ⚠️ **仅 H2 schema**
+源：`tify-knowledge` `Document.java` · ⚠️ **仅 H2 schema**
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -181,7 +181,7 @@ UK: `(agent_id, mcp_server_id)` 唯一索引防重复绑定
 ---
 
 ## 11. workflow · 工作流定义
-源：`hify-workflow` `Workflow.java` · ⚠️ **仅 H2 schema**
+源：`tify-workflow` `Workflow.java` · ⚠️ **仅 H2 schema**
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -193,7 +193,7 @@ UK: `(agent_id, mcp_server_id)` 唯一索引防重复绑定
 ---
 
 ## 12. workflow_node · 工作流节点
-源：`hify-workflow` `WorkflowNode.java` · ⚠️ **仅 H2 schema**
+源：`tify-workflow` `WorkflowNode.java` · ⚠️ **仅 H2 schema**
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -209,7 +209,7 @@ UK: `(agent_id, mcp_server_id)` 唯一索引防重复绑定
 ---
 
 ## 13. workflow_edge · 工作流连线
-源：`hify-workflow` `WorkflowEdge.java` · ⚠️ **仅 H2 schema**
+源：`tify-workflow` `WorkflowEdge.java` · ⚠️ **仅 H2 schema**
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -224,7 +224,7 @@ UK: `(agent_id, mcp_server_id)` 唯一索引防重复绑定
 ---
 
 ## 14. workflow_run · 工作流执行实例
-源：`hify-workflow` `WorkflowRun.java` · ⚠️ **仅 H2 schema**
+源：`tify-workflow` `WorkflowRun.java` · ⚠️ **仅 H2 schema**
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -242,7 +242,7 @@ UK: `(agent_id, mcp_server_id)` 唯一索引防重复绑定
 ---
 
 ## 15. workflow_node_run · 节点执行实例
-源：`hify-workflow` `WorkflowNodeRun.java` · ⚠️ **仅 H2 schema**
+源：`tify-workflow` `WorkflowNodeRun.java` · ⚠️ **仅 H2 schema**
 
 | 字段 | 类型 | 说明 |
 |---|---|---|

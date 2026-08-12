@@ -16,6 +16,9 @@ management:
       application: tify   # 所有指标自动带 application=tify 标签
 
 spring:
+  jackson:
+    time-zone: Asia/Shanghai
+
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:tify}?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: ${DB_USERNAME:root}

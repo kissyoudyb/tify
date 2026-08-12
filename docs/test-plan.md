@@ -1,4 +1,4 @@
-# Hify P0 测试补全计划
+# Tify P0 测试补全计划
 
 > 范围：`docs/test-gaps.md` 中 7 个 P0 缺口
 > 顺序原则：改造路径上的 Characterization > 核心链路集成 > 复杂逻辑单元
@@ -31,7 +31,7 @@
 
 | ID | 名称 | 断言 |
 |---|---|---|
-| #7 | `NoResultInCacheableScanTest` | 反射扫 `com.hify.*` 包下所有 `@Cacheable` 方法，returnType 不能是 `Result<...>` 或被 `Result` 包装 |
+| #7 | `NoResultInCacheableScanTest` | 反射扫 `com.phadcalc.llm.tify.*` 包下所有 `@Cacheable` 方法，returnType 不能是 `Result<...>` 或被 `Result` 包装 |
 
 **改造路径位置**：项目早期就该建这种"机制级护栏"，防止 D3 再次发生
 

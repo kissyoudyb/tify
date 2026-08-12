@@ -25,13 +25,13 @@
   </defs>
 
   <rect width="1280" height="1100" fill="url(#bg)"/>
-  <text x="640" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#0F172A">Hify 外部依赖梳理</text>
+  <text x="640" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#0F172A">Tify 外部依赖梳理</text>
   <text x="640" y="56" text-anchor="middle" font-size="12" fill="#64748B">源：pom.xml · application.yml · README · CLAUDE.md</text>
 
-  <!-- ============ Center: Hify application ============ -->
+  <!-- ============ Center: Tify application ============ -->
   <g filter="url(#sh)">
     <rect x="490" y="430" width="300" height="220" rx="16" fill="url(#grad-app)" stroke="#4338CA" stroke-width="2"/>
-    <text x="640" y="465" text-anchor="middle" font-size="18" font-weight="700" fill="#1E1B4B">Hify</text>
+    <text x="640" y="465" text-anchor="middle" font-size="18" font-weight="700" fill="#1E1B4B">Tify</text>
     <text x="640" y="485" text-anchor="middle" font-size="11" fill="#312E81">Spring Boot 3.2.3 · Java 17</text>
 
     <line x1="510" y1="498" x2="770" y2="498" stroke="#6366F1" stroke-width="0.8" opacity="0.4"/>
@@ -104,13 +104,13 @@
       <rect width="220" height="62" rx="8" fill="white" stroke="#B45309" stroke-width="1"/>
       <text x="14" y="22" font-weight="700" fill="#78350F">pgvector JDBC 0.1.4</text>
       <text x="14" y="38" fill="#92400E">向量类型映射</text>
-      <text x="14" y="52" fill="#92400E">仅 hify-knowledge</text>
+      <text x="14" y="52" fill="#92400E">仅 tify-knowledge</text>
     </g>
     <g transform="translate(762, 230)">
       <rect width="220" height="62" rx="8" fill="white" stroke="#B45309" stroke-width="1"/>
       <text x="14" y="22" font-weight="700" fill="#78350F">MCP Java SDK 1.1.1</text>
       <text x="14" y="38" fill="#92400E">Model Context Protocol 官方</text>
-      <text x="14" y="52" fill="#92400E">仅 hify-mcp</text>
+      <text x="14" y="52" fill="#92400E">仅 tify-mcp</text>
     </g>
     <g transform="translate(996, 230)">
       <rect width="220" height="62" rx="8" fill="white" stroke="#B45309" stroke-width="1"/>
@@ -209,7 +209,7 @@
   <g filter="url(#sh)">
     <rect x="680" y="690" width="560" height="350" rx="14" fill="url(#grad-api)" stroke="#BE123C" stroke-width="1.5" opacity="0.4"/>
     <text x="700" y="718" font-size="14" font-weight="700" fill="#881337">☁️ 类别 3 · 外部 API（出网调用）</text>
-    <text x="700" y="735" font-size="11" fill="#9F123D">hify-provider 适配 · hify-mcp 转发 · apiKey 由前端配置</text>
+    <text x="700" y="735" font-size="11" fill="#9F123D">tify-provider 适配 · tify-mcp 转发 · apiKey 由前端配置</text>
   </g>
 
   <g font-size="11">
@@ -241,7 +241,7 @@
       <rect width="500" height="68" rx="8" fill="white" stroke="#BE123C" stroke-width="1.2" stroke-dasharray="4 3"/>
       <text x="14" y="22" font-weight="700" fill="#881337">MCP Servers（外部工具集）</text>
       <text x="14" y="40" fill="#9F123D">JSON-RPC over HTTP/SSE · MCP Java SDK 1.1.1 序列化</text>
-      <text x="14" y="56" fill="#9F123D">配置存于 hify-mcp，延迟调用外部工具</text>
+      <text x="14" y="56" fill="#9F123D">配置存于 tify-mcp，延迟调用外部工具</text>
     </g>
     <g transform="translate(720, 1004)">
       <rect width="500" height="22" rx="4" fill="white" stroke="#BE123C" stroke-width="1" opacity="0.7"/>
