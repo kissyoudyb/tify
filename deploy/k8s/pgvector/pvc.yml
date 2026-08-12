@@ -1,9 +1,10 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: hify-pgvector-data
-  namespace: hify
+  name: tify-pgvector-data
+  namespace: tify
 spec:
+  storageClassName: nfs-csi
   accessModes:
     - ReadWriteOnce
   resources:

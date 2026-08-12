@@ -1,15 +1,15 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hify-frontend
-  namespace: hify
+  name: tify-frontend
+  namespace: tify
   labels:
-    app: hify-frontend
+    app: tify-frontend
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: hify-frontend
+      app: tify-frontend
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -18,7 +18,7 @@ spec:
   template:
     metadata:
       labels:
-        app: hify-frontend
+        app: tify-frontend
     spec:
       affinity:
         podAntiAffinity:
@@ -27,15 +27,18 @@ spec:
               podAffinityTerm:
                 labelSelector:
                   matchLabels:
-                    app: hify-frontend
+                    app: tify-frontend
                 topologyKey: kubernetes.io/hostname
 
       containers:
         - name: frontend
-          image: hify-frontend:latest
+          image: registry.tjzs.com/phadagent/tify-frontend:rename-tify-pending
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
+          env:
+            - name: TZ
+              value: Asia/Shanghai
 
           # ── 资源限制（Nginx 托管静态文件，资源需求远小于后端）──
           resources:

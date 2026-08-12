@@ -1,15 +1,15 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hify-backend
-  namespace: hify
+  name: tify-backend
+  namespace: tify
   labels:
-    app: hify-backend
+    app: tify-backend
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: hify-backend
+      app: tify-backend
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -18,7 +18,7 @@ spec:
   template:
     metadata:
       labels:
-        app: hify-backend
+        app: tify-backend
     spec:
       # 两个副本打散到不同节点，避免单点故障
       affinity:
@@ -28,12 +28,12 @@ spec:
               podAffinityTerm:
                 labelSelector:
                   matchLabels:
-                    app: hify-backend
+                    app: tify-backend
                 topologyKey: kubernetes.io/hostname
 
       containers:
         - name: backend
-          image: hify-backend:latest
+          image: registry.tjzs.com/phadagent/tify-backend:rename-tify-pending
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
@@ -41,30 +41,31 @@ spec:
           # ── 环境变量：非敏感配置来自 ConfigMap ───────────────
           envFrom:
             - configMapRef:
-                name: hify-backend-config
+                name: tify-backend-config
 
           # ── 环境变量：敏感配置来自 Secret ─────────────────────
           env:
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: hify-backend-secret
+                  name: tify-backend-secret
                   key: DB_PASSWORD
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: hify-backend-secret
+                  name: tify-backend-secret
                   key: REDIS_PASSWORD
             - name: PGVECTOR_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: hify-backend-secret
+                  name: tify-backend-secret
                   key: PGVECTOR_PASSWORD
             - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: hify-backend-secret
+                  name: tify-backend-secret
                   key: OPENAI_API_KEY
+                  optional: true
 
           # ── 资源限制 ──────────────────────────────────────────
           resources:

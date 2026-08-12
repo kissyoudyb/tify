@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: hify-redis
-  namespace: hify
+  name: tify-redis
+  namespace: tify
 spec:
-  serviceName: hify-redis
+  serviceName: tify-redis
   replicas: 1
   selector:
     matchLabels:
-      app: hify-redis
+      app: tify-redis
   template:
     metadata:
       labels:
-        app: hify-redis
+        app: tify-redis
     spec:
       containers:
         - name: redis
@@ -26,12 +26,15 @@ spec:
               bind 0.0.0.0
               protected-mode no
               appendonly yes
-              requirepass $${REDIS_PASSWORD}
+              requirepass ${REDIS_PASSWORD}
               EOF
               redis-server /usr/local/etc/redis/redis.conf
           envFrom:
             - secretRef:
-                name: hify-redis-secret
+                name: tify-redis-secret
+          env:
+            - name: TZ
+              value: Asia/Shanghai
           ports:
             - containerPort: 6379
           resources:
@@ -46,15 +49,15 @@ spec:
               mountPath: /data
           readinessProbe:
             exec:
-              command: ["redis-cli", "-a", "$(REDIS_PASSWORD)", "ping"]
+              command: ["sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" ping"]
             initialDelaySeconds: 10
             periodSeconds: 10
           livenessProbe:
             exec:
-              command: ["redis-cli", "-a", "$(REDIS_PASSWORD)", "ping"]
+              command: ["sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" ping"]
             initialDelaySeconds: 30
             periodSeconds: 20
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: hify-redis-data
+            claimName: tify-redis-data
