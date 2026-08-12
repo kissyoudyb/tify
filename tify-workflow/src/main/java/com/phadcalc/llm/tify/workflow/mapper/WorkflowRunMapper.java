@@ -1,0 +1,9 @@
+package com.phadcalc.llm.tify.workflow.mapper;
+
+import com.phadcalc.llm.tify.common.mapper.BaseMapper;
+import com.phadcalc.llm.tify.workflow.entity.WorkflowRun;
+import org.apache.ibatis.annotations.Mapper;
+
+@Mapper
+public interface WorkflowRunMapper extends BaseMapper<WorkflowRun> {
+}
