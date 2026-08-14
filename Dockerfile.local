@@ -1,0 +1,69 @@
+# ─────────────────────────────────────────────────────────────
+# Tify backend · 本地构建版（复用宿主机已打好的 jar）
+#
+# 与项目根 Dockerfile 的区别：
+#   - 不在容器内执行 mvn package（节省 5-10 分钟）
+#   - 假设宿主机已经执行 `mvn -pl tify-app -am -DskipTests package`
+#     并在 tify-app/target/ 下生成了 tify-app-*.jar
+#
+# 构建用法：
+#   docker build -f Dockerfile.local \
+#     --build-arg JAR_FILE=tify-app/target/tify-app-0.0.1-SNAPSHOT.jar \
+#     -t registry.tjzs.com/phadagent/tify-backend:<tag> .
+# ─────────────────────────────────────────────────────────────
+ARG JAR_FILE=tify-app/target/tify-app-0.0.1-SNAPSHOT.jar
+
+# 私服基础镜像（registry.tjzs.com），如需改回公网把 library 前缀去掉即可
+ARG BASE_IMAGE=registry.tjzs.com/library/eclipse-temurin:17-jre-alpine
+ARG BUILDER_IMAGE=registry.tjzs.com/library/eclipse-temurin:17-jdk
+
+# ── Stage 1: Extract Spring Boot layers ───────────────────────
+FROM ${BUILDER_IMAGE} AS builder
+
+ARG JAR_FILE
+WORKDIR /build
+
+# 复制本地打好的 fat jar
+COPY ${JAR_FILE} /build/app.jar
+
+# 用 layertools 把 jar 拆成 4 层（依赖/loader/snapshot/application）
+# 这样运行时镜像的层缓存粒度更细，依赖不变就不重传
+RUN java -Djarmode=layertools \
+        -jar /build/app.jar extract \
+        --destination /build/layers
+
+# ── Stage 2: Runtime ─────────────────────────────────────────
+FROM ${BASE_IMAGE}
+
+# 非 root 用户 + 时区数据
+RUN apk add --no-cache tzdata \
+    && addgroup -S tify \
+    && adduser -S tify -G tify
+
+WORKDIR /app
+
+# 按变化频率从低到高复制，最大化 Docker 层缓存命中
+COPY --from=builder --chown=tify:tify /build/layers/dependencies/           ./
+COPY --from=builder --chown=tify:tify /build/layers/spring-boot-loader/     ./
+COPY --from=builder --chown=tify:tify /build/layers/snapshot-dependencies/  ./
+COPY --from=builder --chown=tify:tify /build/layers/application/            ./
+
+# 挂载点：外部 application.yml 与日志目录
+VOLUME ["/app/config", "/app/logs"]
+
+USER tify
+
+EXPOSE 8080
+
+ENV TZ=Asia/Shanghai \
+    SERVER_PORT=8080 \
+    JVM_OPTS="-Xms256m -Xmx512m -Duser.timezone=Asia/Shanghai"
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD wget -qO- http://localhost:${SERVER_PORT}/api/v1/health || exit 1
+
+ENTRYPOINT ["sh", "-c", \
+  "exec java ${JVM_OPTS} \
+    -Djava.security.egd=file:/dev/./urandom \
+    org.springframework.boot.loader.launch.JarLauncher \
+    --spring.config.additional-location=optional:file:/app/config/application.yml"]

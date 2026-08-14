@@ -38,7 +38,8 @@ CREATE TABLE IF NOT EXISTS model_config (
     created_at   DATETIME        NOT NULL                COMMENT '创建时间',
     updated_at   DATETIME        NOT NULL                COMMENT '更新时间',
     PRIMARY KEY (id),
-    KEY idx_model_config_provider_id (provider_id)
+    KEY idx_model_config_provider_id (provider_id),
+    UNIQUE KEY uk_model_config_provider_model (provider_id, model_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='模型配置';
 
 -- ─────────────────────────────────────────────
@@ -180,3 +181,94 @@ CREATE TABLE IF NOT EXISTS document (
     KEY idx_document_kb_id (knowledge_base_id),
     KEY idx_document_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文档';
+
+-- ─────────────────────────────────────────────
+-- 工作流定义
+-- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS workflow (
+    id          BIGINT          NOT NULL AUTO_INCREMENT COMMENT '主键',
+    name        VARCHAR(100)    NOT NULL                COMMENT '工作流名称',
+    description VARCHAR(500)    DEFAULT ''              COMMENT '描述',
+    status      VARCHAR(20)     NOT NULL DEFAULT 'DRAFT' COMMENT '状态：DRAFT / PUBLISHED / DISABLED',
+    deleted     TINYINT(1)      NOT NULL DEFAULT 0      COMMENT '逻辑删除：0 正常 1 删除',
+    created_at  DATETIME        NOT NULL                COMMENT '创建时间',
+    updated_at  DATETIME        NOT NULL                COMMENT '更新时间',
+    PRIMARY KEY (id),
+    KEY idx_workflow_name (name),
+    KEY idx_workflow_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='工作流定义';
+
+-- ─────────────────────────────────────────────
+-- 工作流节点
+-- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS workflow_node (
+    id          BIGINT          NOT NULL AUTO_INCREMENT COMMENT '主键',
+    workflow_id BIGINT          NOT NULL                COMMENT '所属工作流 id（FK → workflow.id）',
+    node_key    VARCHAR(100)    NOT NULL                COMMENT '工作流内节点唯一标识（如 classify / router）',
+    type        VARCHAR(50)     NOT NULL                COMMENT '节点类型：LLM / CONDITION / API_CALL / KNOWLEDGE / START / END',
+    name        VARCHAR(100)    NOT NULL DEFAULT ''     COMMENT '节点展示名',
+    config      TEXT                                    COMMENT '节点配置 JSON（默认 {}）',
+    deleted     TINYINT(1)      NOT NULL DEFAULT 0      COMMENT '逻辑删除：0 正常 1 删除',
+    created_at  DATETIME        NOT NULL                COMMENT '创建时间',
+    updated_at  DATETIME        NOT NULL                COMMENT '更新时间',
+    PRIMARY KEY (id),
+    UNIQUE KEY idx_workflow_node_workflow_key (workflow_id, node_key),
+    KEY idx_workflow_node_workflow_id (workflow_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='工作流节点';
+
+-- ─────────────────────────────────────────────
+-- 工作流连线
+-- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS workflow_edge (
+    id              BIGINT          NOT NULL AUTO_INCREMENT COMMENT '主键',
+    workflow_id     BIGINT          NOT NULL                COMMENT '所属工作流 id（FK → workflow.id）',
+    source_node_key VARCHAR(100)    NOT NULL                COMMENT '起始节点 key',
+    target_node_key VARCHAR(100)    NOT NULL                COMMENT '目标节点 key',
+    condition_expr  VARCHAR(500)    DEFAULT NULL            COMMENT '条件表达式，NULL 表示无条件',
+    deleted         TINYINT(1)      NOT NULL DEFAULT 0      COMMENT '逻辑删除：0 正常 1 删除',
+    created_at      DATETIME        NOT NULL                COMMENT '创建时间',
+    updated_at      DATETIME        NOT NULL                COMMENT '更新时间',
+    PRIMARY KEY (id),
+    KEY idx_workflow_edge_workflow_id (workflow_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='工作流连线';
+
+-- ─────────────────────────────────────────────
+-- 工作流执行实例
+-- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS workflow_run (
+    id          BIGINT          NOT NULL AUTO_INCREMENT COMMENT '主键',
+    workflow_id BIGINT          NOT NULL                COMMENT '所属工作流 id（FK → workflow.id）',
+    status      VARCHAR(20)     NOT NULL DEFAULT 'RUNNING' COMMENT '状态：RUNNING / SUCCESS / FAILED',
+    input       TEXT                                    COMMENT '入参快照 JSON',
+    output      TEXT                                    COMMENT '出参快照 JSON',
+    error       VARCHAR(500)                            COMMENT '失败原因',
+    elapsed_ms  INT                                     COMMENT '总耗时（ms）',
+    finished_at DATETIME                                COMMENT '结束时间',
+    deleted     TINYINT(1)      NOT NULL DEFAULT 0      COMMENT '逻辑删除：0 正常 1 删除',
+    created_at  DATETIME        NOT NULL                COMMENT '创建时间',
+    updated_at  DATETIME        NOT NULL                COMMENT '更新时间',
+    PRIMARY KEY (id),
+    KEY idx_workflow_run_workflow_id (workflow_id),
+    KEY idx_workflow_run_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='工作流执行实例';
+
+-- ─────────────────────────────────────────────
+-- 工作流节点执行实例
+-- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS workflow_node_run (
+    id              BIGINT          NOT NULL AUTO_INCREMENT COMMENT '主键',
+    workflow_run_id BIGINT          NOT NULL                COMMENT '所属执行实例 id（FK → workflow_run.id）',
+    node_key        VARCHAR(100)    NOT NULL                COMMENT '节点 key',
+    node_type       VARCHAR(50)     NOT NULL                COMMENT '节点类型（同 workflow_node.type）',
+    status          VARCHAR(20)     NOT NULL DEFAULT 'RUNNING' COMMENT '状态：RUNNING / SUCCESS / FAILED',
+    outputs         TEXT                                    COMMENT '节点输出快照 JSON（ctx.snapshot()）',
+    error           VARCHAR(500)                            COMMENT '失败原因',
+    elapsed_ms      INT                                     COMMENT '节点耗时（ms）',
+    finished_at     DATETIME                                COMMENT '节点结束时间',
+    deleted         TINYINT(1)      NOT NULL DEFAULT 0      COMMENT '逻辑删除：0 正常 1 删除',
+    created_at      DATETIME        NOT NULL                COMMENT '创建时间',
+    updated_at      DATETIME        NOT NULL                COMMENT '更新时间',
+    PRIMARY KEY (id),
+    KEY idx_workflow_node_run_workflow_run_id (workflow_run_id),
+    KEY idx_workflow_node_run_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='工作流节点执行实例';

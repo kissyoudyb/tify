@@ -44,6 +44,10 @@
 
 关系：provider **1:N** model_config
 
+> 唯一索引：`UNIQUE KEY uk_model_config_provider_model (provider_id, model_id)`
+> 防止 `ProviderConnectionTestService.refreshModels` 在并发或重试时产生 `(provider_id, model_id)` 重复行。
+> Agent / Chat / Workflow 全部按 `model_config.id` 单条访问，本 UK 不影响现有数据。
+
 ---
 
 ## 3. provider_health · 供应商健康状态

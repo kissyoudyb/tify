@@ -24,7 +24,8 @@ CREATE TABLE IF NOT EXISTS model_config (
     enabled      TINYINT         NOT NULL DEFAULT 1,
     deleted      TINYINT         NOT NULL DEFAULT 0,
     created_at   DATETIME        NOT NULL,
-    updated_at   DATETIME        NOT NULL
+    updated_at   DATETIME        NOT NULL,
+    CONSTRAINT uk_model_config_provider_model UNIQUE (provider_id, model_id)
 );
 
 CREATE TABLE IF NOT EXISTS provider_health (

@@ -17,11 +17,15 @@ import okhttp3.OkHttpClient;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -97,28 +101,60 @@ public class ProviderConnectionTestService {
 
     private void refreshModels(Provider provider, ProviderAdapter adapter) {
         try {
-            List<String> modelIds = adapter.listModels(provider, testClient);
-            if (modelIds == null || modelIds.isEmpty()) {
+            List<String> remoteModelIds = adapter.listModels(provider, testClient);
+            if (remoteModelIds == null || remoteModelIds.isEmpty()) {
                 log.debug("provider={} listModels 返回空", provider.getName());
                 return;
             }
-            // 简单同步策略：把当前 enabled=1 的 model_config 全部置 0，再按远端列表插入
-            ModelConfig update = new ModelConfig();
-            update.setEnabled(0);
-            modelConfigMapper.update(update,
-                    new LambdaUpdateWrapper<ModelConfig>()
+            // 幂等同步策略：远端有的本地已存在则完全不动，避免反复 INSERT 把已绑定的 model 顶掉。
+            // 1) 拉一次本地 enabled=1 的列表，建立 modelId -> ModelConfig 索引
+            // 2) 远端有的：本地没有才 INSERT
+            // 3) 远端没有的（即已下架）才 enabled=0
+            // 数据库层兜底：model_config (provider_id, model_id) 有 UK，重复 INSERT 会抛 DuplicateKeyException，被 try/catch 吞掉不影响其它行
+            List<ModelConfig> localEnabled = modelConfigMapper.selectList(
+                    new LambdaQueryWrapper<ModelConfig>()
                             .eq(ModelConfig::getProviderId, provider.getId())
                             .eq(ModelConfig::getEnabled, 1));
-            for (String modelId : modelIds) {
+
+            Map<String, ModelConfig> localByModelId = localEnabled.stream()
+                    .collect(Collectors.toMap(ModelConfig::getModelId, mc -> mc, (a, b) -> a));
+
+            Set<String> remoteSet = new HashSet<>(remoteModelIds);
+
+            int inserted = 0;
+            for (String modelId : remoteModelIds) {
+                if (localByModelId.containsKey(modelId)) {
+                    continue;   // 远端 + 本地都有：完全不动，保留 id 给 Agent
+                }
                 ModelConfig mc = new ModelConfig();
                 mc.setProviderId(provider.getId());
                 mc.setName(modelId);
                 mc.setModelId(modelId);
                 mc.setContextSize(4096);
                 mc.setEnabled(1);
-                modelConfigMapper.insert(mc);
+                try {
+                    modelConfigMapper.insert(mc);
+                    inserted++;
+                } catch (Exception e) {
+                    // 兜底：UK 冲突（并发 refreshModels 抢同一 (provider_id, model_id)）→ 忽略
+                    log.debug("insert model_config skip provider={} modelId={}: {}",
+                            provider.getName(), modelId, e.getMessage());
+                }
             }
-            log.info("provider={} 同步 model_config，共 {} 个", provider.getName(), modelIds.size());
+
+            int disabled = 0;
+            for (ModelConfig mc : localEnabled) {
+                if (!remoteSet.contains(mc.getModelId())) {
+                    ModelConfig update = new ModelConfig();
+                    update.setId(mc.getId());
+                    update.setEnabled(0);
+                    modelConfigMapper.updateById(update);
+                    disabled++;
+                }
+            }
+
+            log.info("provider={} 同步 model_config：远端 {}，本地 {}，新增 {}，下架 {}",
+                    provider.getName(), remoteModelIds.size(), localEnabled.size(), inserted, disabled);
         } catch (Exception e) {
             log.warn("refreshModels 失败 provider={}: {}", provider.getName(), e.getMessage());
         }
