@@ -6,7 +6,7 @@ metadata:
   labels:
     app: tify-frontend
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: tify-frontend

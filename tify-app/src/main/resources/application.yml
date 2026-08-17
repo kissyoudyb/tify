@@ -84,7 +84,7 @@ resilience4j:
 # 临时止血：把它关掉，彻底修复在 ProviderConnectionTestService.refreshModels 里做幂等同步。
 tify:
   health-check:
-    enabled: false
+    enabled: true
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
