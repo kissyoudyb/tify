@@ -15,6 +15,7 @@
         <module>tify-common</module>
         <module>tify-provider</module>
         <module>tify-mcp</module>
+        <module>tify-mcp-refund</module>
         <module>tify-agent</module>
         <module>tify-workflow</module>
         <module>tify-knowledge</module>
@@ -29,7 +30,7 @@
         <maven.compiler.release>${java.version}</maven.compiler.release>
 
         <!-- Dependency versions -->
-        <spring-boot.version>3.2.3</spring-boot.version>
+        <spring-boot.version>3.4.5</spring-boot.version>
         <mybatis-plus.version>3.5.9</mybatis-plus.version>
         <mysql-connector.version>8.3.0</mysql-connector.version>
         <resilience4j.version>2.2.0</resilience4j.version>

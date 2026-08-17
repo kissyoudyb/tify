@@ -82,6 +82,32 @@
 | `description` | VARCHAR(500) | 描述 |
 | `enabled` | TINYINT(1) | 是否启用 |
 
+> **缓存策略**：MCP Server 数量少，工具 schema 不落库，每次 `listToolsDetail` 实时从 Server 拉取。
+> 所以本表只存"Server 接入信息"，不存"工具详情"。
+
+---
+
+## 4.1 refund_application · 退款申请（tify-mcp-refund 自管）
+源：`tify-mcp-refund` `RefundApplication.java` · `tify-mcp-refund/src/main/resources/schema-mysql.sql`
+
+> 本表属于**独立子项目** `tify-mcp-refund`（端口 9001），使用主 MySQL 的独立 schema `tify_refund`。
+> tify-mcp-refund 不依赖 tify-common，所以审计字段（created_at / updated_at / deleted）由本地 MyBatis-Plus MetaObjectHandler 自管。
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `id` 🔑 | BIGINT | 主键 |
+| `order_id` | VARCHAR(64) | 关联订单号（IDX: `idx_refund_order_id`） |
+| `user_id` | VARCHAR(64) | 用户 ID（IDX: `idx_refund_user_id`） |
+| `amount` | DECIMAL(10,2) | 退款金额 |
+| `reason` | VARCHAR(500) | 退款原因 |
+| `status` | VARCHAR(20) | 状态枚举：`PENDING` / `APPROVED` / `PROCESSING` / `COMPLETED` / `REJECTED` / `CANCELLED`（IDX: `idx_refund_status`） |
+| `reject_reason` | VARCHAR(500) NULL | 拒绝原因 |
+| `created_at` | DATETIME | 创建时间 |
+| `updated_at` | DATETIME | 更新时间 |
+| `deleted` | TINYINT(1) | 逻辑删除 |
+
+复合索引：`idx_refund_order_created (order_id, created_at DESC)` — 给"按订单号查最新申请"用。
+
 ---
 
 ## 5. agent · Agent 配置

@@ -135,7 +135,7 @@ public class McpServiceImpl implements McpService {
         McpServer server = getOrThrow(mcpServerId);
         var transport = HttpClientSseClientTransport.builder(server.getEndpoint()).build();
         try (McpSyncClient client = McpClient.sync(transport)
-                .requestTimeout(Duration.ofSeconds(5))
+                .requestTimeout(Duration.ofSeconds(10))
                 .build()) {
             client.initialize();
             return client.listTools().tools().stream()
@@ -189,7 +189,7 @@ public class McpServiceImpl implements McpService {
     private List<String> listToolsFromEndpoint(String endpoint) {
         var transport = HttpClientSseClientTransport.builder(endpoint).build();
         try (McpSyncClient client = McpClient.sync(transport)
-                .requestTimeout(Duration.ofSeconds(5))
+                .requestTimeout(Duration.ofSeconds(10))
                 .build()) {
             client.initialize();
             return client.listTools().tools().stream()

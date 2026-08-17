@@ -15,7 +15,8 @@ tify/
 ├── tify-provider/     # 模型提供商
 ├── tify-agent/        # Agent 配置
 ├── tify-chat/         # 对话引擎
-├── tify-mcp/          # MCP 工具
+├── tify-mcp/          # MCP 工具管理面（Client 端）
+├── tify-mcp-refund/   # 退款 MCP Server（独立部署，端口 9001）
 ├── tify-workflow/     # 工作流
 ├── tify-knowledge/    # RAG 知识库
 ├── tify-common/       # 公共模块
@@ -112,6 +113,31 @@ mvn spring-boot:run -pl tify-app -Dspring-boot.run.profiles=local
 ```
 
 > 注意：`mvn spring-boot:run` 默认占用 8080。如果同时要跑 port-forward，会冲突 —— 二选一。
+
+### 3.1 退款 MCP Server（tify-mcp-refund）本地启动
+
+退款是 tify-mcp 接入的第一个**真实业务** Server，独立部署在 9001 端口：
+
+```bash
+# 终端 1：refund server（dev profile，H2 内存库，无外部依赖）
+cd tify-mcp-refund
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+
+# 终端 2：tify 主工程（mock profile，含 tify-mcp 管理面）
+cd tify-app
+mvn spring-boot:run -Dspring-boot.run.profiles=mock
+
+# 注册 refund server 到 tify-mcp
+curl -X POST http://localhost:8080/api/v1/mcp-servers \
+  -H "Content-Type: application/json" \
+  -d '{"name":"refund-server","endpoint":"http://localhost:9001/sse","description":"refund mcp server"}'
+
+# 连通测试（自动拉取 4 个工具）
+curl -X POST http://localhost:8080/api/v1/mcp-servers/1/test
+```
+
+4 个工具：`check_refund_eligibility` / `submit_refund` / `get_refund_status` / `cancel_refund`。
+详见 `specs/第25讲-退款MCP-Server-实现计划.md`。
 
 ---
 
