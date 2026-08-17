@@ -89,7 +89,7 @@ Nginx（静态文件 + API 反向代理）→ Spring Boot → MySQL / Redis / pg
 ### 后端模块内部结构
 每个业务模块统一结构：
 ```
-src/main/java/com/tify/{module}/
+src/main/java/com/phadcalc/llm/tify/{module}/
 ├── controller/        # REST 接口，只做参数校验和调用 Service
 ├── service/           # 业务逻辑接口
 ├── service/impl/      # 业务逻辑实现

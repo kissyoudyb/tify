@@ -211,7 +211,7 @@ public class McpServiceImpl implements McpService {
                 .eq(McpServer::getName, name)
                 .ne(excludeId != null, McpServer::getId, excludeId);
         if (mcpServerMapper.selectCount(wrapper) > 0) {
-            throw new BizException(ErrorCode.MCP_SERVER_NOT_FOUND, "MCP Server 名称已存在");
+            throw new BizException(ErrorCode.MCP_SERVER_NAME_DUPLICATE);
         }
     }
 }

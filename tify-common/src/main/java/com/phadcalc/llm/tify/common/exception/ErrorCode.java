@@ -36,7 +36,8 @@ public enum ErrorCode {
 
     // 5000-5999 MCP
     MCP_SERVER_NOT_FOUND(5000, "MCP Server 不存在"),
-    MCP_TOOL_CALL_FAILED(5001, "MCP 工具调用失败"),
+    MCP_SERVER_NAME_DUPLICATE(5001, "MCP Server 名称已存在"),
+    MCP_TOOL_CALL_FAILED(5002, "MCP 工具调用失败"),
 
     // 6000-6999 Workflow
     WORKFLOW_NOT_FOUND(6000, "工作流不存在"),
