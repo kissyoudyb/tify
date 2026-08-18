@@ -1,31 +1,34 @@
 package com.phadcalc.llm.tify.knowledge.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.phadcalc.llm.tify.common.dto.PageResult;
 import com.phadcalc.llm.tify.common.dto.Result;
 import com.phadcalc.llm.tify.common.exception.BizException;
 import com.phadcalc.llm.tify.common.exception.ErrorCode;
+import com.phadcalc.llm.tify.knowledge.client.EmbeddingClient;
 import com.phadcalc.llm.tify.knowledge.dto.*;
 import com.phadcalc.llm.tify.knowledge.entity.Document;
 import com.phadcalc.llm.tify.knowledge.entity.KnowledgeBase;
 import com.phadcalc.llm.tify.knowledge.mapper.DocumentMapper;
 import com.phadcalc.llm.tify.knowledge.mapper.KnowledgeBaseMapper;
 import com.phadcalc.llm.tify.knowledge.service.KnowledgeService;
-import lombok.RequiredArgsConstructor;
+import com.phadcalc.llm.tify.knowledge.vector.ChunkHit;
+import com.phadcalc.llm.tify.knowledge.vector.ChunkVectorStore;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
@@ -36,20 +39,28 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 
     private final KnowledgeBaseMapper kbMapper;
     private final DocumentMapper documentMapper;
+    private final EmbeddingClient embeddingClient;
+    private final ChunkVectorStore chunkVectorStore;
     private final Executor asyncExecutor;
 
-    // Mock chunk 存储（替代 pgvector）
-    private static final ConcurrentHashMap<Long, List<ChunkVO>> MOCK_CHUNKS = new ConcurrentHashMap<>();
-    // 暂存原始文件内容，processDocument 后清除
-    private static final ConcurrentHashMap<Long, String> DOC_RAW_TEXT = new ConcurrentHashMap<>();
+    /** 暂存上传的原始文件字节，processDocument 消费后清除 */
+    private static final ConcurrentHashMap<Long, byte[]> DOC_RAW_BYTES = new ConcurrentHashMap<>();
     private static final List<String> ALLOWED_TYPES = Arrays.asList("txt", "md", "pdf");
     private static final long MAX_SIZE = 10 * 1024 * 1024L; // 10MB
+    /** 单个分块最大字符数，超出按窗口切分 */
+    private static final int MAX_CHUNK_CHARS = 500;
+    /** 窗口切分时的重叠字符数，保证上下文衔接 */
+    private static final int CHUNK_OVERLAP = 50;
 
     public KnowledgeServiceImpl(KnowledgeBaseMapper kbMapper,
                                 DocumentMapper documentMapper,
+                                EmbeddingClient embeddingClient,
+                                ChunkVectorStore chunkVectorStore,
                                 @Qualifier("asyncExecutor") Executor asyncExecutor) {
         this.kbMapper = kbMapper;
         this.documentMapper = documentMapper;
+        this.embeddingClient = embeddingClient;
+        this.chunkVectorStore = chunkVectorStore;
         this.asyncExecutor = asyncExecutor;
     }
 
@@ -96,13 +107,14 @@ public class KnowledgeServiceImpl implements KnowledgeService {
     @Transactional
     public void deleteKb(Long id) {
         getKbOrThrow(id);
-        // 逻辑删除下属文档
+        // 逻辑删除下属文档 + 清向量
         List<Document> docs = documentMapper.selectList(
             new LambdaQueryWrapper<Document>().eq(Document::getKnowledgeBaseId, id));
         for (Document doc : docs) {
-            MOCK_CHUNKS.remove(doc.getId());
+            chunkVectorStore.deleteByDocument(doc.getId());
             documentMapper.deleteById(doc.getId());
         }
+        chunkVectorStore.deleteByKnowledgeBase(id);
         kbMapper.deleteById(id);
     }
 
@@ -124,20 +136,7 @@ public class KnowledgeServiceImpl implements KnowledgeService {
             throw new BizException(ErrorCode.PARAM_ERROR);
         }
 
-        // 读取文件内容（txt/md 直接读文本，pdf 降级为文件名占位）
-        String rawText = "";
-        try {
-            if ("txt".equals(ext) || "md".equals(ext)) {
-                rawText = new String(file.getBytes(), java.nio.charset.StandardCharsets.UTF_8);
-            } else {
-                rawText = "[PDF 文件：" + originalName + "，Mock 模式暂不解析 PDF 内容]";
-            }
-        } catch (IOException e) {
-            log.warn("读取文件内容失败: {}", e.getMessage());
-        }
-        final String rawTextFinal = rawText;
-
-        // 写 document 记录
+        // 写 document 记录（PENDING），文件字节交给异步管线解析+切分+向量化
         Document doc = new Document();
         doc.setKnowledgeBaseId(kbId);
         doc.setName(originalName);
@@ -149,8 +148,10 @@ public class KnowledgeServiceImpl implements KnowledgeService {
         documentMapper.insert(doc);
 
         Long docId = doc.getId();
-        if (!rawTextFinal.isBlank()) {
-            DOC_RAW_TEXT.put(docId, rawTextFinal);
+        try {
+            DOC_RAW_BYTES.put(docId, file.getBytes());
+        } catch (IOException e) {
+            log.warn("读取上传文件失败: {}", e.getMessage());
         }
         asyncExecutor.execute(() -> processDocument(docId));
 
@@ -181,7 +182,9 @@ public class KnowledgeServiceImpl implements KnowledgeService {
     public List<ChunkVO> getChunks(Long documentId) {
         Document doc = documentMapper.selectById(documentId);
         if (doc == null) throw new BizException(ErrorCode.DOCUMENT_NOT_FOUND);
-        return MOCK_CHUNKS.getOrDefault(documentId, List.of());
+        return chunkVectorStore.listByDocument(documentId).stream()
+                .map(this::toChunkVO)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -189,92 +192,170 @@ public class KnowledgeServiceImpl implements KnowledgeService {
     public void deleteDocument(Long id) {
         Document doc = documentMapper.selectById(id);
         if (doc == null) throw new BizException(ErrorCode.DOCUMENT_NOT_FOUND);
-        MOCK_CHUNKS.remove(id);
+        chunkVectorStore.deleteByDocument(id);
         documentMapper.deleteById(id);
     }
 
-    // ── RAG 检索（Mock）──────────────────────────────────────
+    // ── RAG 检索（真实向量检索）───────────────────────────────
 
     @Override
     public List<ChunkVO> searchChunks(Long knowledgeBaseId, String query, int topK) {
-        // Mock 实现：收集该知识库下所有 DONE 文档的 chunk，取前 topK 条返回
-        // 真实实现应调用 Embedding API + pgvector 相似度查询
-        List<Document> docs = documentMapper.selectList(
-            new LambdaQueryWrapper<Document>()
-                .eq(Document::getKnowledgeBaseId, knowledgeBaseId)
-                .eq(Document::getStatus, "DONE"));
-
-        List<ChunkVO> all = new ArrayList<>();
-        for (Document doc : docs) {
-            List<ChunkVO> chunks = MOCK_CHUNKS.getOrDefault(doc.getId(), List.of());
-            all.addAll(chunks);
+        try {
+            float[] queryEmbedding = embeddingClient.embedQuery(query);
+            List<ChunkHit> hits = chunkVectorStore.search(knowledgeBaseId, queryEmbedding, topK);
+            log.info("RAG 检索 kbId={} query='{}' 命中 {} 条", knowledgeBaseId, query, hits.size());
+            return hits.stream().map(this::toChunkVO).collect(Collectors.toList());
+        } catch (Exception e) {
+            // 检索失败不能拖垮对话，降级为空
+            log.warn("RAG 检索失败 kbId={}，降级为空: {}", knowledgeBaseId, e.getMessage());
+            return List.of();
         }
-
-        // Mock 相似度：随机打乱后取前 topK（真实场景是按向量余弦距离排序）
-        java.util.Collections.shuffle(all, new Random(query.hashCode()));
-        List<ChunkVO> result = all.stream().limit(topK).toList();
-        log.info("RAG mock 检索 kbId={} query='{}' 命中 {}/{} 条", knowledgeBaseId, query, result.size(), all.size());
-        return result;
     }
 
-    // ── 管线处理（Mock）──────────────────────────────────────
+    // ── 文档处理管线（异步）───────────────────────────────────
 
     private void processDocument(Long documentId) {
         Document doc = documentMapper.selectById(documentId);
         if (doc == null) return;
         try {
-            // step1: PROCESSING
             doc.setStatus("PROCESSING");
             documentMapper.updateById(doc);
 
-            // step2: 模拟处理耗时
-            Thread.sleep(2000 + new Random().nextInt(2000));
-
-            // step3: 生成 chunks（优先用真实文件内容，按段落/换行切割）
-            String rawText = DOC_RAW_TEXT.remove(documentId);
-            List<ChunkVO> chunks = new ArrayList<>();
-            if (rawText != null && !rawText.isBlank()) {
-                // 按段落切割（连续空行）
-                String[] paragraphs = rawText.split("\\n{2,}");
-                for (int i = 0; i < paragraphs.length; i++) {
-                    String para = paragraphs[i].trim();
-                    if (para.isBlank()) continue;
-                    ChunkVO c = new ChunkVO();
-                    c.setId((long) (documentId * 1000 + i));
-                    c.setDocumentId(documentId);
-                    c.setChunkIndex(i);
-                    c.setContent(para);
-                    c.setTokenCount(para.length() / 2 + 1);
-                    chunks.add(c);
-                }
+            byte[] rawBytes = DOC_RAW_BYTES.remove(documentId);
+            if (rawBytes == null || rawBytes.length == 0) {
+                throw new IllegalStateException("文件内容为空");
             }
-            // 如果没有内容（如 PDF 占位），生成一条说明
+
+            // step1: 抽取文本（txt/md 直接读 UTF-8，pdf 用 PDFBox）
+            String rawText = extractText(rawBytes, doc.getFileType());
+            if (rawText == null || rawText.isBlank()) {
+                throw new IllegalStateException("未能从文件中解析出文本内容");
+            }
+
+            // step2: 文本切块
+            List<String> chunks = splitText(rawText);
             if (chunks.isEmpty()) {
-                ChunkVO c = new ChunkVO();
-                c.setId(documentId * 1000);
-                c.setDocumentId(documentId);
-                c.setChunkIndex(0);
-                c.setContent(String.format("【%s】（Mock 模式：文档内容未能解析）", doc.getName()));
-                c.setTokenCount(20);
-                chunks.add(c);
+                throw new IllegalStateException("文本切分为空");
             }
-            int chunkCount = chunks.size();
-            MOCK_CHUNKS.put(documentId, chunks);
 
-            // step4: 更新状态
-            doc.setChunkCount(chunkCount);
+            // step3: 批量向量化
+            List<float[]> vectors = embeddingClient.embed(chunks);
+
+            // step4: 写入向量存储
+            for (int i = 0; i < chunks.size(); i++) {
+                chunkVectorStore.saveChunk(documentId, doc.getKnowledgeBaseId(), i,
+                        chunks.get(i), estimateTokens(chunks.get(i)), vectors.get(i));
+            }
+
+            // step5: 更新状态
+            doc.setChunkCount(chunks.size());
+            doc.setErrorMessage("");
             doc.setStatus("DONE");
             documentMapper.updateById(doc);
 
-            log.info("文档处理完成 docId={}, chunks={}", documentId, chunkCount);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            log.info("文档处理完成 docId={} type={} chunks={}", documentId, doc.getFileType(), chunks.size());
         } catch (Exception e) {
             log.error("文档处理失败 docId={}", documentId, e);
+            try {
+                chunkVectorStore.deleteByDocument(documentId);
+            } catch (Exception ex) {
+                log.warn("清理失败文档的向量失败: {}", ex.getMessage());
+            }
             doc.setStatus("FAILED");
             doc.setErrorMessage(e.getMessage() != null ? e.getMessage() : "处理失败");
             documentMapper.updateById(doc);
         }
+    }
+
+    // ── 文本抽取与切分 ────────────────────────────────────────
+
+    private String extractText(byte[] bytes, String fileType) {
+        if ("txt".equals(fileType) || "md".equals(fileType)) {
+            return new String(bytes, StandardCharsets.UTF_8);
+        }
+        if ("pdf".equals(fileType)) {
+            try (PDDocument pdf = Loader.loadPDF(bytes)) {
+                return new PDFTextStripper().getText(pdf);
+            } catch (IOException e) {
+                throw new IllegalStateException("PDF 解析失败: " + e.getMessage());
+            }
+        }
+        throw new IllegalStateException("不支持的文件类型: " + fileType);
+    }
+
+    /**
+     * 按段落（连续空行）切分，小段落（如标题、列表项）与后续内容贪心合并成整块，
+     * 避免产生信息量过低的孤立分块；单块超过 MAX_CHUNK_CHARS 时按窗口切（带重叠）。
+     */
+    private List<String> splitText(String text) {
+        List<String> result = new ArrayList<>();
+        String normalized = text.replace("\r\n", "\n");
+        String[] paragraphs = normalized.split("\\n{2,}");
+
+        StringBuilder buf = new StringBuilder();
+        for (String para : paragraphs) {
+            String trimmed = para.trim();
+            if (trimmed.isBlank()) continue;
+            if (buf.isEmpty()) {
+                buf.append(trimmed);
+            } else if (buf.length() + 1 + trimmed.length() <= MAX_CHUNK_CHARS) {
+                buf.append('\n').append(trimmed);
+            } else {
+                flushChunk(result, buf);
+                buf.append(trimmed);
+            }
+        }
+        flushChunk(result, buf);
+
+        // 整篇没有分段且未产生任何分块（如单段超长已被窗口切分，正常不会走到这里）
+        if (result.isEmpty() && !normalized.isBlank()) {
+            result.addAll(splitByWindow(normalized.trim()));
+        }
+        return result;
+    }
+
+    private void flushChunk(List<String> result, StringBuilder buf) {
+        if (buf.isEmpty()) return;
+        String chunk = buf.toString();
+        buf.setLength(0);
+        if (chunk.length() <= MAX_CHUNK_CHARS) {
+            result.add(chunk);
+        } else {
+            result.addAll(splitByWindow(chunk));
+        }
+    }
+
+    private List<String> splitByWindow(String text) {
+        List<String> result = new ArrayList<>();
+        int start = 0;
+        while (start < text.length()) {
+            int end = Math.min(start + MAX_CHUNK_CHARS, text.length());
+            // 在窗口末尾附近找最后一个标点/空格断点，避免生切单词
+            if (end < text.length()) {
+                int cut = text.lastIndexOf('。', end);
+                if (cut <= start) cut = text.lastIndexOf(' ', end);
+                if (cut > start + MAX_CHUNK_CHARS / 2) end = cut + 1;
+            }
+            result.add(text.substring(start, end).trim());
+            if (end >= text.length()) break;
+            start = end - CHUNK_OVERLAP;
+        }
+        return result.stream().filter(s -> !s.isBlank()).collect(Collectors.toList());
+    }
+
+    /** 粗略估算 token 数（中文约 2 字符/token） */
+    private int estimateTokens(String content) {
+        return content.length() / 2 + 1;
+    }
+
+    private ChunkVO toChunkVO(ChunkHit hit) {
+        ChunkVO vo = new ChunkVO();
+        vo.setId(hit.id());
+        vo.setDocumentId(hit.documentId());
+        vo.setChunkIndex(hit.chunkIndex());
+        vo.setContent(hit.content());
+        vo.setTokenCount(hit.tokenCount() != null ? hit.tokenCount() : estimateTokens(hit.content()));
+        return vo;
     }
 
     private KnowledgeBase getKbOrThrow(Long id) {

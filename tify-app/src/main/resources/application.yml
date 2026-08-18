@@ -85,6 +85,12 @@ tify:
   health-check:
     enabled: false
 
+  # ── 向量嵌入模型（OpenAI 兼容 /v1/embeddings）─────────────
+  embedding:
+    base-url: ${EMBEDDING_BASE_URL:http://192.168.130.220:8004}
+    model: ${EMBEDDING_MODEL:Qwen3-Embedding-0.6B}
+    api-key: ${EMBEDDING_API_KEY:}
+
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.phadcalc.llm.tify.*.entity

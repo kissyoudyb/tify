@@ -32,7 +32,7 @@ spec:
 
       containers:
         - name: frontend
-          image: registry.tjzs.com/phadagent/tify-frontend:rename-tify-7109495-1504
+          image: registry.tjzs.com/phadagent/tify-frontend:rename-tify-0eb688b-1544
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80

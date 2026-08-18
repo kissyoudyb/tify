@@ -8,7 +8,7 @@
         </el-button>
         <div>
           <div class="page-title">{{ kbName || '知识库文档' }}</div>
-          <div class="page-desc">管理文档，上传后自动分块向量化（当前为 Mock 模式）</div>
+          <div class="page-desc">管理文档，上传后自动分块向量化，支持 RAG 检索</div>
         </div>
       </div>
       <div class="page-header-actions">
