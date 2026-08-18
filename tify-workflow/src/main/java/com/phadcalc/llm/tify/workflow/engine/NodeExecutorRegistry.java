@@ -22,7 +22,12 @@ public class NodeExecutorRegistry {
     public NodeExecutorRegistry(List<NodeExecutor> executors) {
         executorMap = new HashMap<>();
         for (NodeExecutor executor : executors) {
-            executorMap.put(executor.nodeType().toUpperCase(), executor);
+            String type = executor.nodeType();
+            if (type == null || type.isBlank()) {
+                log.warn("NodeExecutor {} 未声明 nodeType，跳过注册", executor.getClass().getSimpleName());
+                continue;
+            }
+            executorMap.put(type.toUpperCase(), executor);
         }
         log.info("NodeExecutorRegistry registered types: {}", executorMap.keySet());
     }

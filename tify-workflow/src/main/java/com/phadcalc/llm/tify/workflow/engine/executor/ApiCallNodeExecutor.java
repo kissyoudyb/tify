@@ -36,18 +36,20 @@ public class ApiCallNodeExecutor implements NodeExecutor {
 
         log.info("ApiCallNodeExecutor node={} {} {}", node.getNodeKey(), method, url);
 
-        try {
-            Request request = new Request.Builder()
-                    .url(url)
-                    .method(method, null)
-                    .build();
-            try (Response response = httpClient.newCall(request).execute()) {
-                String body = response.body() != null ? response.body().string() : "";
-                ctx.set(node.getNodeKey(), outputVar, body);
+        Request request = new Request.Builder()
+                .url(url)
+                .method(method, null)
+                .build();
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new IllegalStateException("HTTP " + response.code());
             }
+            String body = response.body() != null ? response.body().string() : "";
+            ctx.set(node.getNodeKey(), outputVar, body);
         } catch (Exception e) {
+            // 失败向上抛，由 WorkflowEngine 统一标记 FAILED，避免静默写错误文案误导后续节点
             log.error("ApiCallNodeExecutor failed node={}: {}", node.getNodeKey(), e.getMessage());
-            ctx.set(node.getNodeKey(), outputVar, "API 调用失败: " + e.getMessage());
+            throw new RuntimeException("节点 [" + node.getNodeKey() + "] API 调用失败: " + e.getMessage(), e);
         }
     }
 }

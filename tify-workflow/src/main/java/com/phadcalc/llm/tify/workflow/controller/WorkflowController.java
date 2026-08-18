@@ -41,4 +41,21 @@ public class WorkflowController {
         workflowService.delete(id);
         return Result.ok();
     }
+
+    @GetMapping("/{id}/runs")
+    public Result<PageResult<WorkflowRunVO>> listRuns(@PathVariable Long id,
+                                                      @RequestParam(defaultValue = "1") int page,
+                                                      @RequestParam(defaultValue = "10") int pageSize) {
+        return workflowService.listRuns(id, page, pageSize);
+    }
+
+    @GetMapping("/{id}/runs/latest")
+    public Result<WorkflowRunDetailVO> getLatestRun(@PathVariable Long id) {
+        return Result.ok(workflowService.getLatestRun(id));
+    }
+
+    @GetMapping("/{id}/runs/{runId}")
+    public Result<WorkflowRunDetailVO> getRun(@PathVariable Long id, @PathVariable Long runId) {
+        return Result.ok(workflowService.getRun(id, runId));
+    }
 }

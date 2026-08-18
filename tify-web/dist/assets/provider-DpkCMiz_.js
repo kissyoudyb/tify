@@ -1,1 +1,0 @@
-import{d as t,p as o,g as s,a as i}from"./request-CyBioCPV.js";import"./index-BlRU-9Mt.js";const p=e=>s("/v1/providers",e),n=e=>o("/v1/providers",e),c=(e,r)=>i(`/v1/providers/${e}`,r),a=e=>t(`/v1/providers/${e}`),P=e=>o(`/v1/providers/${e}/test-connection`,{});export{n as createProvider,a as deleteProvider,p as getProviderList,P as testConnection,c as updateProvider};

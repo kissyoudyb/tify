@@ -72,16 +72,13 @@ public class LlmNodeExecutor implements NodeExecutor {
     }
 
     private ModelConfig loadModelConfig(Long modelConfigId) {
-        if (modelConfigId != null) {
-            ModelConfig mc = modelConfigMapper.selectById(modelConfigId);
-            if (mc != null && mc.getEnabled() == 1) return mc;
+        if (modelConfigId == null) {
+            throw new IllegalStateException("LLM 节点未配置 modelConfigId，请在工作流配置中显式指定");
         }
-        // fallback：取第一个可用的模型配置
-        ModelConfig mc = modelConfigMapper.selectList(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ModelConfig>()
-                        .eq(ModelConfig::getEnabled, 1)
-                        .last("LIMIT 1")
-        ).stream().findFirst().orElseThrow(() -> new IllegalStateException("没有可用的模型配置"));
+        ModelConfig mc = modelConfigMapper.selectById(modelConfigId);
+        if (mc == null || mc.getEnabled() != 1) {
+            throw new IllegalStateException("LLM 节点模型配置不存在或已禁用: " + modelConfigId);
+        }
         return mc;
     }
 }

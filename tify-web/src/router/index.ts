@@ -36,6 +36,14 @@ const router = createRouter({
       component: () => import('@/views/workflow/WorkflowCreate.vue'),
     },
     {
+      path: '/workflows/:id/edit',
+      component: () => import('@/views/workflow/WorkflowCreate.vue'),
+    },
+    {
+      path: '/workflows/:id/runs',
+      component: () => import('@/views/workflow/WorkflowRunList.vue'),
+    },
+    {
       path: '/mcp',
       component: () => import('@/views/mcp/McpServerList.vue'),
     },

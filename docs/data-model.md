@@ -179,7 +179,7 @@ UK: `(agent_id, mcp_server_id)` 唯一索引防重复绑定
 ---
 
 ## 9. knowledge_base · 知识库
-源：`tify-knowledge` `KnowledgeBase.java` · ⚠️ **仅 H2 schema，未进生产 schema.sql**
+源：`tify-knowledge` `KnowledgeBase.java` · 已建表：`schema.sql` + `schema-h2.sql`
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -191,7 +191,7 @@ UK: `(agent_id, mcp_server_id)` 唯一索引防重复绑定
 ---
 
 ## 10. document · 文档
-源：`tify-knowledge` `Document.java` · ⚠️ **仅 H2 schema**
+源：`tify-knowledge` `Document.java` · 已建表：`schema.sql` + `schema-h2.sql`
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -211,7 +211,7 @@ UK: `(agent_id, mcp_server_id)` 唯一索引防重复绑定
 ---
 
 ## 11. workflow · 工作流定义
-源：`tify-workflow` `Workflow.java` · ⚠️ **仅 H2 schema**
+源：`tify-workflow` `Workflow.java` · 已建表：`schema.sql` + `schema-h2.sql`
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -223,7 +223,7 @@ UK: `(agent_id, mcp_server_id)` 唯一索引防重复绑定
 ---
 
 ## 12. workflow_node · 工作流节点
-源：`tify-workflow` `WorkflowNode.java` · ⚠️ **仅 H2 schema**
+源：`tify-workflow` `WorkflowNode.java` · 已建表：`schema.sql` + `schema-h2.sql`
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -239,7 +239,7 @@ UK: `(agent_id, mcp_server_id)` 唯一索引防重复绑定
 ---
 
 ## 13. workflow_edge · 工作流连线
-源：`tify-workflow` `WorkflowEdge.java` · ⚠️ **仅 H2 schema**
+源：`tify-workflow` `WorkflowEdge.java` · 已建表：`schema.sql` + `schema-h2.sql`
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -254,7 +254,7 @@ UK: `(agent_id, mcp_server_id)` 唯一索引防重复绑定
 ---
 
 ## 14. workflow_run · 工作流执行实例
-源：`tify-workflow` `WorkflowRun.java` · ⚠️ **仅 H2 schema**
+源：`tify-workflow` `WorkflowRun.java` · 已建表：`schema.sql` + `schema-h2.sql`
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -272,7 +272,7 @@ UK: `(agent_id, mcp_server_id)` 唯一索引防重复绑定
 ---
 
 ## 15. workflow_node_run · 节点执行实例
-源：`tify-workflow` `WorkflowNodeRun.java` · ⚠️ **仅 H2 schema**
+源：`tify-workflow` `WorkflowNodeRun.java` · 已建表：`schema.sql` + `schema-h2.sql`
 
 | 字段 | 类型 | 说明 |
 |---|---|---|

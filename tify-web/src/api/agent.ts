@@ -25,6 +25,7 @@ export interface AgentDetail {
   maxContextTurns: number
   enabled: number
   toolIds: number[]
+  workflowId?: number | null
   createdAt: string
   updatedAt: string
 }
@@ -38,6 +39,7 @@ export interface AgentCreateDTO {
   maxTokens: number
   maxContextTurns: number
   toolIds?: number[]
+  workflowId?: number | null
 }
 
 export interface AgentUpdateDTO {
@@ -48,6 +50,7 @@ export interface AgentUpdateDTO {
   temperature?: number
   maxTokens?: number
   maxContextTurns?: number
+  workflowId?: number | null
 }
 
 export interface ModelOption {

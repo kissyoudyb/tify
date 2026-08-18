@@ -52,6 +52,7 @@ public class AgentServiceImpl implements AgentService {
         agent.setMaxTokens(request.getMaxTokens());
         agent.setMaxContextTurns(request.getMaxContextTurns());
         agent.setEnabled(1);
+        agent.setWorkflowId(request.getWorkflowId());
         agentMapper.insert(agent);
 
         List<Long> toolIds = request.getToolIds();

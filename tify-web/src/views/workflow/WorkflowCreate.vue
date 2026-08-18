@@ -2,7 +2,7 @@
   <div class="workflow-create">
     <div class="page-header">
       <div>
-        <h2 class="page-title">新建工作流</h2>
+        <h2 class="page-title">{{ isEdit ? '编辑工作流' : '新建工作流' }}</h2>
         <p class="page-desc">通过 JSON 配置定义节点和连线</p>
       </div>
       <el-button @click="$router.push('/workflows')">返回列表</el-button>
@@ -38,20 +38,27 @@
 
     <div class="form-actions">
       <el-button @click="$router.push('/workflows')">取消</el-button>
-      <el-button type="primary" :loading="submitting" @click="handleSubmit">创建工作流</el-button>
+      <el-button type="primary" :loading="submitting" @click="handleSubmit">
+        {{ isEdit ? '保存修改' : '创建工作流' }}
+      </el-button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { createWorkflow } from '@/api/workflow'
+import { createWorkflow, updateWorkflow, getWorkflow } from '@/api/workflow'
 
 const router = useRouter()
+const route = useRoute()
 const submitting = ref(false)
 const jsonError = ref('')
+const currentStatus = ref('DRAFT')
+
+const isEdit = computed(() => !!route.params.id)
+const workflowId = computed(() => route.params.id ? Number(route.params.id) : null)
 
 const EXAMPLE = {
   nodes: [
@@ -59,6 +66,7 @@ const EXAMPLE = {
     {
       nodeKey: 'classify', type: 'LLM', name: '问题分类',
       config: {
+        modelConfigId: 1,
         prompt: '你是意图分类器，用户消息：{{start.userMessage}}，仅回复：售前、售后 或 技术支持',
         outputVariable: 'intent'
       }
@@ -69,15 +77,15 @@ const EXAMPLE = {
     },
     {
       nodeKey: 'presale', type: 'LLM', name: '售前咨询',
-      config: { prompt: '你是售前顾问，解答产品功能和优势。用户问题：{{start.userMessage}}', outputVariable: 'answer' }
+      config: { modelConfigId: 1, prompt: '你是售前顾问，解答产品功能和优势。用户问题：{{start.userMessage}}', outputVariable: 'answer' }
     },
     {
       nodeKey: 'aftersale', type: 'LLM', name: '售后服务',
-      config: { prompt: '你是售后客服，解答退换货和保修问题。用户问题：{{start.userMessage}}', outputVariable: 'answer' }
+      config: { modelConfigId: 1, prompt: '你是售后客服，解答退换货和保修问题。用户问题：{{start.userMessage}}', outputVariable: 'answer' }
     },
     {
       nodeKey: 'techsupport', type: 'LLM', name: '技术支持',
-      config: { prompt: '你是技术工程师，帮用户排查使用问题。用户问题：{{start.userMessage}}', outputVariable: 'answer' }
+      config: { modelConfigId: 1, prompt: '你是技术工程师，帮用户排查使用问题。用户问题：{{start.userMessage}}', outputVariable: 'answer' }
     },
     { nodeKey: 'end', type: 'END', name: '结束', config: { outputVariable: 'answer' } }
   ],
@@ -137,22 +145,60 @@ async function handleSubmit() {
     return
   }
 
+  // 编辑模式提交时剥离后端详情返回的 id / createdAt 等冗余字段
+  const nodes = parsed.nodes.map((n: any) => ({
+    nodeKey: n.nodeKey,
+    type: n.type,
+    name: n.name,
+    config: n.config ?? {},
+  }))
+  const edges = (parsed.edges || []).map((e: any) => ({
+    sourceNodeKey: e.sourceNodeKey,
+    targetNodeKey: e.targetNodeKey,
+    condition: e.condition ?? null,
+  }))
+
   submitting.value = true
   try {
-    await createWorkflow({
-      name: form.value.name,
-      description: form.value.description,
-      nodes: parsed.nodes,
-      edges: parsed.edges || []
-    })
-    ElMessage.success('工作流创建成功')
+    if (isEdit.value) {
+      await updateWorkflow(workflowId.value!, {
+        name: form.value.name,
+        description: form.value.description,
+        status: currentStatus.value,
+        nodes,
+        edges,
+      })
+      ElMessage.success('工作流已保存')
+    } else {
+      await createWorkflow({
+        name: form.value.name,
+        description: form.value.description,
+        nodes,
+        edges,
+      })
+      ElMessage.success('工作流创建成功')
+    }
     router.push('/workflows')
   } catch (e: any) {
-    ElMessage.error(e?.message || '创建失败')
+    ElMessage.error(e?.message || (isEdit.value ? '保存失败' : '创建失败'))
   } finally {
     submitting.value = false
   }
 }
+
+onMounted(async () => {
+  if (!isEdit.value) return
+  try {
+    const detail = await getWorkflow(workflowId.value!) as any
+    currentStatus.value = detail.status || 'DRAFT'
+    form.value.name = detail.name
+    form.value.description = detail.description ?? ''
+    jsonStr.value = JSON.stringify({ nodes: detail.nodes, edges: detail.edges }, null, 2)
+  } catch (e: any) {
+    ElMessage.error(e?.message || '加载工作流详情失败')
+    router.push('/workflows')
+  }
+})
 </script>
 
 <style scoped>

@@ -156,6 +156,32 @@
             </el-checkbox-group>
           </div>
         </el-tab-pane>
+        <!-- ── 工作流绑定 tab ── -->
+        <el-tab-pane label="工作流绑定" name="workflow">
+          <div class="tools-pane">
+            <el-form label-width="110px" label-position="right" style="margin-top:12px">
+              <el-form-item label="绑定工作流">
+                <el-select
+                  v-model="form.workflowId"
+                  placeholder="选择工作流（留空 = 直接对话，不走工作流）"
+                  clearable
+                  style="width:100%"
+                  :loading="workflowsLoading"
+                >
+                  <el-option
+                    v-for="wf in workflows"
+                    :key="wf.id"
+                    :label="`${wf.name}（${wf.status}）`"
+                    :value="wf.id"
+                  />
+                </el-select>
+              </el-form-item>
+            </el-form>
+            <div class="form-hint" style="margin-left:110px">
+              绑定后对话将走工作流引擎：按节点编排执行，不再直接调 LLM
+            </div>
+          </div>
+        </el-tab-pane>
       </el-tabs>
 
       <template #footer>
@@ -184,6 +210,24 @@ import {
 import type { AgentListItem, ModelOption } from '@/api/agent'
 import { getMcpServerList } from '@/api/mcp'
 import type { McpServerVO } from '@/api/mcp'
+import { listWorkflows } from '@/api/workflow'
+import type { WorkflowListItem } from '@/api/workflow'
+
+// ── 工作流列表（工作流绑定 tab 使用，打开弹窗时加载）──────────
+const workflows = ref<WorkflowListItem[]>([])
+const workflowsLoading = ref(false)
+
+const loadWorkflows = async () => {
+  workflowsLoading.value = true
+  try {
+    const res = await listWorkflows({ page: 1, pageSize: 100 }) as any
+    workflows.value = res?.list || []
+  } catch {
+    workflows.value = []
+  } finally {
+    workflowsLoading.value = false
+  }
+}
 
 // ── MCP Server 列表（工具绑定 tab 使用，打开弹窗时加载）────────
 const mcpServers = ref<McpServerVO[]>([])
@@ -256,6 +300,7 @@ const defaultForm = () => ({
   maxTokens: 2048,
   maxContextTurns: 10,
   toolIds: [] as number[],
+  workflowId: null as number | null,
 })
 
 const form = ref(defaultForm())
@@ -276,6 +321,7 @@ const openCreate = () => {
   dialogMode.value = 'add'
   dialogVisible.value = true
   loadMcpServers()
+  loadWorkflows()
 }
 
 const openEdit = async (row: AgentListItem) => {
@@ -283,6 +329,7 @@ const openEdit = async (row: AgentListItem) => {
   editingId.value = row.id
   dialogVisible.value = true
   loadMcpServers()
+  loadWorkflows()
   try {
     const detail = await getAgentDetail(row.id)
     form.value = {
@@ -294,6 +341,7 @@ const openEdit = async (row: AgentListItem) => {
       maxTokens: detail.maxTokens,
       maxContextTurns: detail.maxContextTurns,
       toolIds: detail.toolIds ?? [],
+      workflowId: detail.workflowId ?? null,
     }
   } catch {
     ElMessage.error('加载 Agent 详情失败')
@@ -315,6 +363,7 @@ const onSubmit = async () => {
         maxTokens: form.value.maxTokens,
         maxContextTurns: form.value.maxContextTurns,
         toolIds: form.value.toolIds,
+        workflowId: form.value.workflowId,
       })
       notifySuccess('新增成功')
     } else {
@@ -326,6 +375,7 @@ const onSubmit = async () => {
         temperature: form.value.temperature,
         maxTokens: form.value.maxTokens,
         maxContextTurns: form.value.maxContextTurns,
+        workflowId: form.value.workflowId,
       })
       await bindAgentTools(editingId.value!, form.value.toolIds)
       notifySuccess('保存成功')

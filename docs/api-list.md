@@ -77,6 +77,9 @@ PageResult<T> { List<T> list; long total; int page; int pageSize; }
 | GET | `/api/v1/workflows/{id}` | 详情（含节点/连线） | `id` | `Result<WorkflowDetailVO>` |
 | PUT | `/api/v1/workflows/{id}` | 更新 | `id` + `WorkflowUpdateRequest` | `Result<WorkflowDetailVO>` |
 | DELETE | `/api/v1/workflows/{id}` | 删除 | `id` | `Result<Void>` |
+| GET | `/api/v1/workflows/{id}/runs` | 分页查询执行记录（按时间倒序） | `id`, `page, pageSize` | `Result<PageResult<WorkflowRunVO>>` |
+| GET | `/api/v1/workflows/{id}/runs/latest` | 最近一次执行记录（含节点明细） | `id` | `Result<WorkflowRunDetailVO>` |
+| GET | `/api/v1/workflows/{id}/runs/{runId}` | 指定执行记录（含节点明细） | `id`, `runId` | `Result<WorkflowRunDetailVO>` |
 
 ---
 
@@ -150,9 +153,9 @@ PageResult<T> { List<T> list; long total; int page; int pageSize; }
 | tify-provider | ProviderController | 6 |
 | tify-mcp | McpController | 8 |
 | tify-agent | AgentController | 6 |
-| tify-workflow | WorkflowController | 5 |
+| tify-workflow | WorkflowController | 8 |
 | tify-knowledge | KnowledgeController | 10 |
 | tify-chat | ChatController | 6 |
-| **合计** | **7** | **42** |
+| **合计** | **7** | **45** |
 
-> 注：HealthController 1 + Provider 6 + Mcp 8 + Agent 6 + Workflow 5 + Knowledge 10 + Chat 6 = **42**。
+> 注：HealthController 1 + Provider 6 + Mcp 8 + Agent 6 + Workflow 8 + Knowledge 10 + Chat 6 = **45**。

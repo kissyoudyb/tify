@@ -31,4 +31,7 @@ public class AgentCreateRequest {
     private Integer maxContextTurns = 10;
 
     private List<Long> toolIds;
+
+    /** 绑定的工作流 id，传 null 表示不启用工作流 */
+    private Long workflowId;
 }

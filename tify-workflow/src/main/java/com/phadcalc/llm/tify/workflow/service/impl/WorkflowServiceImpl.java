@@ -12,9 +12,13 @@ import com.phadcalc.llm.tify.workflow.dto.*;
 import com.phadcalc.llm.tify.workflow.entity.Workflow;
 import com.phadcalc.llm.tify.workflow.entity.WorkflowEdge;
 import com.phadcalc.llm.tify.workflow.entity.WorkflowNode;
+import com.phadcalc.llm.tify.workflow.entity.WorkflowNodeRun;
+import com.phadcalc.llm.tify.workflow.entity.WorkflowRun;
 import com.phadcalc.llm.tify.workflow.mapper.WorkflowEdgeMapper;
 import com.phadcalc.llm.tify.workflow.mapper.WorkflowMapper;
 import com.phadcalc.llm.tify.workflow.mapper.WorkflowNodeMapper;
+import com.phadcalc.llm.tify.workflow.mapper.WorkflowNodeRunMapper;
+import com.phadcalc.llm.tify.workflow.mapper.WorkflowRunMapper;
 import com.phadcalc.llm.tify.workflow.service.WorkflowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +37,8 @@ public class WorkflowServiceImpl implements WorkflowService {
     private final WorkflowMapper workflowMapper;
     private final WorkflowNodeMapper nodeMapper;
     private final WorkflowEdgeMapper edgeMapper;
+    private final WorkflowRunMapper runMapper;
+    private final WorkflowNodeRunMapper nodeRunMapper;
     private final ObjectMapper objectMapper;
 
     // ── 创建 ────────────────────────────────────────────────────
@@ -118,6 +124,54 @@ public class WorkflowServiceImpl implements WorkflowService {
                         .eq(WorkflowEdge::getWorkflowId, id)
                         .set(WorkflowEdge::getDeleted, 1));
         workflowMapper.deleteById(id);
+    }
+
+    // ── 执行记录 ────────────────────────────────────────────────
+
+    @Override
+    public Result<PageResult<WorkflowRunVO>> listRuns(Long workflowId, int page, int pageSize) {
+        getOrThrow(workflowId);
+        LambdaQueryWrapper<WorkflowRun> wrapper = new LambdaQueryWrapper<WorkflowRun>()
+                .eq(WorkflowRun::getWorkflowId, workflowId)
+                .orderByDesc(WorkflowRun::getId);
+        var p = runMapper.selectPage(new Page<>(page, Math.min(pageSize, 100)), wrapper);
+        List<WorkflowRunVO> items = p.getRecords().stream()
+                .map(WorkflowRunVO::from)
+                .collect(Collectors.toList());
+        return PageResult.of(items, p.getTotal(), (int) p.getCurrent(), (int) p.getSize());
+    }
+
+    @Override
+    public WorkflowRunDetailVO getLatestRun(Long workflowId) {
+        getOrThrow(workflowId);
+        WorkflowRun run = runMapper.selectOne(
+                new LambdaQueryWrapper<WorkflowRun>()
+                        .eq(WorkflowRun::getWorkflowId, workflowId)
+                        .orderByDesc(WorkflowRun::getId)
+                        .last("LIMIT 1"));
+        if (run == null) return null;
+        return assembleRunDetail(run);
+    }
+
+    @Override
+    public WorkflowRunDetailVO getRun(Long workflowId, Long runId) {
+        getOrThrow(workflowId);
+        WorkflowRun run = runMapper.selectById(runId);
+        if (run == null || !workflowId.equals(run.getWorkflowId())) return null;
+        return assembleRunDetail(run);
+    }
+
+    private WorkflowRunDetailVO assembleRunDetail(WorkflowRun run) {
+        List<WorkflowNodeRun> nodeRuns = nodeRunMapper.selectList(
+                new LambdaQueryWrapper<WorkflowNodeRun>()
+                        .eq(WorkflowNodeRun::getWorkflowRunId, run.getId())
+                        .orderByAsc(WorkflowNodeRun::getId));
+        WorkflowRunDetailVO vo = new WorkflowRunDetailVO();
+        vo.setRun(WorkflowRunVO.from(run));
+        vo.setNodeRuns(nodeRuns.stream()
+                .map(n -> WorkflowNodeRunVO.from(n, objectMapper))
+                .collect(Collectors.toList()));
+        return vo;
     }
 
     // ── 内部工具 ─────────────────────────────────────────────────
