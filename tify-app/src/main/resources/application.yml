@@ -77,14 +77,13 @@ resilience4j:
           - com.phadcalc.llm.tify.common.http.LlmApiException
 
 # ── Tify 自定义配置 ─────────────────────────────────────────
-# 注意：health-check 默认是开启的（matchIfMissing=true）。
-# ProviderHealthCheckTask 每 60s 跑一次 provider 连通性测试，
-# 测试成功时会触发 refreshModels 反复 INSERT model_config 行，
-# 导致 model_config 表行数暴涨并把已绑定的 model 置为 enabled=0。
-# 临时止血：把它关掉，彻底修复在 ProviderConnectionTestService.refreshModels 里做幂等同步。
+# ProviderHealthCheckTask（每 60s 一轮连通性测试）默认开启（matchIfMissing=true）。
+# 模型同步已由 ProviderConnectionTestService.refreshModels 幂等处理，
+# 但周期探测会产生多余的外部 LLM 调用与日志噪音，这里显式关闭；
+# 需要时在 deploy 脚本 / 环境变量里覆盖为 true 即可。
 tify:
   health-check:
-    enabled: true
+    enabled: false
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
