@@ -182,10 +182,20 @@ import {
   getModelOptions,
 } from '@/api/agent'
 import type { AgentListItem, ModelOption } from '@/api/agent'
+import { getMcpServerList } from '@/api/mcp'
+import type { McpServerVO } from '@/api/mcp'
 
-// ── MCP Server 类型（暂无后端接口，用空列表占位）────────────────
-interface McpServer { id: number; name: string; endpoint: string }
-const mcpServers = ref<McpServer[]>([])
+// ── MCP Server 列表（工具绑定 tab 使用，打开弹窗时加载）────────
+const mcpServers = ref<McpServerVO[]>([])
+
+const loadMcpServers = async () => {
+  try {
+    const res = await getMcpServerList({ page: 1, pageSize: 100, enabled: 1 })
+    mcpServers.value = res.list
+  } catch {
+    mcpServers.value = []
+  }
+}
 
 // ── 模型选项 ───────────────────────────────────────────────
 const modelOptions = ref<ModelOption[]>([])
@@ -265,12 +275,14 @@ const resetForm = () => {
 const openCreate = () => {
   dialogMode.value = 'add'
   dialogVisible.value = true
+  loadMcpServers()
 }
 
 const openEdit = async (row: AgentListItem) => {
   dialogMode.value = 'edit'
   editingId.value = row.id
   dialogVisible.value = true
+  loadMcpServers()
   try {
     const detail = await getAgentDetail(row.id)
     form.value = {
