@@ -5,57 +5,60 @@ WORKDIR /build
 
 # 先只复制 pom 文件，利用 Docker 层缓存，依赖未变时跳过下载
 COPY pom.xml .
-COPY hify-common/pom.xml    hify-common/pom.xml
-COPY hify-provider/pom.xml  hify-provider/pom.xml
-COPY hify-agent/pom.xml     hify-agent/pom.xml
-COPY hify-mcp/pom.xml       hify-mcp/pom.xml
-COPY hify-chat/pom.xml      hify-chat/pom.xml
-COPY hify-workflow/pom.xml  hify-workflow/pom.xml
-COPY hify-knowledge/pom.xml hify-knowledge/pom.xml
-COPY hify-app/pom.xml       hify-app/pom.xml
+COPY tify-common/pom.xml    tify-common/pom.xml
+COPY tify-provider/pom.xml  tify-provider/pom.xml
+COPY tify-agent/pom.xml     tify-agent/pom.xml
+COPY tify-mcp/pom.xml       tify-mcp/pom.xml
+COPY tify-chat/pom.xml      tify-chat/pom.xml
+COPY tify-workflow/pom.xml  tify-workflow/pom.xml
+COPY tify-knowledge/pom.xml tify-knowledge/pom.xml
+COPY tify-app/pom.xml       tify-app/pom.xml
 
 RUN mvn dependency:go-offline -q
 
 # 再复制源码编译
-COPY hify-common/src    hify-common/src
-COPY hify-provider/src  hify-provider/src
-COPY hify-agent/src     hify-agent/src
-COPY hify-mcp/src       hify-mcp/src
-COPY hify-chat/src      hify-chat/src
-COPY hify-workflow/src  hify-workflow/src
-COPY hify-knowledge/src hify-knowledge/src
-COPY hify-app/src       hify-app/src
+COPY tify-common/src    tify-common/src
+COPY tify-provider/src  tify-provider/src
+COPY tify-agent/src     tify-agent/src
+COPY tify-mcp/src       tify-mcp/src
+COPY tify-chat/src      tify-chat/src
+COPY tify-workflow/src  tify-workflow/src
+COPY tify-knowledge/src tify-knowledge/src
+COPY tify-app/src       tify-app/src
 
 RUN mvn package -DskipTests -q
 
 # 用 layertools 拆分 jar，让运行阶段的层缓存更细
 RUN java -Djarmode=layertools \
-    -jar hify-app/target/hify-app-*.jar extract \
+    -jar tify-app/target/tify-app-*.jar extract \
     --destination /build/layers
 
 # ── Stage 2: Runtime ──────────────────────────────────────────
 FROM eclipse-temurin:17-jre-alpine
 
 # 非 root 用户运行
-RUN addgroup -S hify && adduser -S hify -G hify
+RUN apk add --no-cache tzdata \
+    && addgroup -S tify \
+    && adduser -S tify -G tify
 
 WORKDIR /app
 
 # 按变化频率从低到高分层，最大化缓存命中
-COPY --from=builder --chown=hify:hify /build/layers/dependencies/          ./
-COPY --from=builder --chown=hify:hify /build/layers/spring-boot-loader/    ./
-COPY --from=builder --chown=hify:hify /build/layers/snapshot-dependencies/ ./
-COPY --from=builder --chown=hify:hify /build/layers/application/           ./
+COPY --from=builder --chown=tify:tify /build/layers/dependencies/          ./
+COPY --from=builder --chown=tify:tify /build/layers/spring-boot-loader/    ./
+COPY --from=builder --chown=tify:tify /build/layers/snapshot-dependencies/ ./
+COPY --from=builder --chown=tify:tify /build/layers/application/           ./
 
 # 挂载点：外部 application.yml 和日志目录
 VOLUME ["/app/config", "/app/logs"]
 
-USER hify
+USER tify
 
 EXPOSE 8080
 
-ENV SERVER_PORT=8080 \
-    JVM_OPTS="-Xms256m -Xmx512m"
+ENV TZ=Asia/Shanghai \
+    SERVER_PORT=8080 \
+    JVM_OPTS="-Xms256m -Xmx512m -Duser.timezone=Asia/Shanghai"
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
   CMD wget -qO- http://localhost:${SERVER_PORT}/api/v1/health || exit 1

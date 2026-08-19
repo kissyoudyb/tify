@@ -1,14 +1,14 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: hify-backend
-  namespace: hify
+  name: tify-backend
+  namespace: tify
   labels:
-    app: hify-backend
+    app: tify-backend
 spec:
   type: ClusterIP
   selector:
-    app: hify-backend
+    app: tify-backend
   ports:
     - name: http
       port: 8080

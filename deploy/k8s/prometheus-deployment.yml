@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: prometheus
-  namespace: hify
+  namespace: tify
   labels:
     app: prometheus
 spec:

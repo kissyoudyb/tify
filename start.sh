@@ -2,9 +2,9 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PID_FILE="$ROOT_DIR/hify.pid"
-LOG_FILE="$ROOT_DIR/logs/hify.log"
-JAR="$ROOT_DIR/hify-app.jar"
+PID_FILE="$ROOT_DIR/tify.pid"
+LOG_FILE="$ROOT_DIR/logs/tify.log"
+JAR="$ROOT_DIR/tify-app.jar"
 CONFIG="$ROOT_DIR/application.yml"
 
 BACKEND_PORT="${SERVER_PORT:-8080}"
@@ -31,7 +31,7 @@ java_version=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}' | cut -d. 
 if [[ -f "$PID_FILE" ]]; then
   pid=$(cat "$PID_FILE")
   if kill -0 "$pid" 2>/dev/null; then
-    warn "Hify 已在运行（PID=${pid}），如需重启请先执行 stop.sh"
+    warn "Tify 已在运行（PID=${pid}），如需重启请先执行 stop.sh"
     exit 0
   fi
   rm -f "$PID_FILE"
@@ -49,7 +49,7 @@ if [[ -f "$ROOT_DIR/.env" ]]; then
 fi
 
 # ── 构造 JVM 参数 ─────────────────────────────────────────────
-JVM_OPTS="${JVM_OPTS:--Xms256m -Xmx512m}"
+JVM_OPTS="${JVM_OPTS:--Xms256m -Xmx512m -Duser.timezone=Asia/Shanghai}"
 
 SPRING_ARGS=(
   "--server.port=${SERVER_PORT:-8080}"
@@ -61,7 +61,7 @@ if [[ -f "$CONFIG" ]]; then
 fi
 
 # ── 启动 ──────────────────────────────────────────────────────
-info "启动 Hify ..."
+info "启动 Tify ..."
 info "  JAR     : $JAR"
 info "  日志    : $LOG_FILE"
 info "  JVM     : $JVM_OPTS"
@@ -82,17 +82,17 @@ until curl -sf "$HEALTH_URL" &>/dev/null; do
     error "进程已退出，最后几行日志："
     tail -30 "$LOG_FILE" >&2
     rm -f "$PID_FILE"
-    die "Hify 启动失败"
+    die "Tify 启动失败"
   fi
   sleep 2
   elapsed=$((elapsed + 2))
   if [[ $elapsed -ge $HEALTH_TIMEOUT ]]; then
     error "启动超时，最后几行日志："
     tail -30 "$LOG_FILE" >&2
-    die "Hify 未能在 ${HEALTH_TIMEOUT}s 内就绪"
+    die "Tify 未能在 ${HEALTH_TIMEOUT}s 内就绪"
   fi
   printf "."
 done
 echo
 
-info "✅ Hify 启动成功：http://localhost:${SERVER_PORT:-8080}"
+info "✅ Tify 启动成功：http://localhost:${SERVER_PORT:-8080}"

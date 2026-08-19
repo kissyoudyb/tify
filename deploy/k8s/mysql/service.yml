@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: hify-mysql
-  namespace: hify
+  name: tify-mysql
+  namespace: tify
 spec:
   type: ClusterIP
   ports:
@@ -10,4 +10,4 @@ spec:
       port: 3306
       targetPort: 3306
   selector:
-    app: hify-mysql
+    app: tify-mysql

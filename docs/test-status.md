@@ -1,7 +1,7 @@
-# Hify 测试现状盘点
+# Tify 测试现状盘点
 
 > 时间：2026-08-08
-> 扫描范围：`hify-*/src/test/**`、`tests/**`、`e2e/**`、`integration-test/**`、`cypress/**`、`playwright/**`
+> 扫描范围：`tify-*/src/test/**`、`tests/**`、`e2e/**`、`integration-test/**`、`cypress/**`、`playwright/**`
 > 排除：`node_modules/`、`target/`
 
 ## 1. 测试总量
@@ -11,7 +11,7 @@
 | 单元测试（`*Test.java` / `*Tests.java`） | **0** | 所有模块 `src/test` 目录不存在 |
 | 集成测试（`*IT.java` / `tests/`） | **0** | — |
 | E2E（`e2e/` / cypress / playwright） | **0** | — |
-| 前端单元测试（`.spec.ts` / `.test.ts`） | **0** | `hify-web/package.json` 没配 Vitest / Jest |
+| 前端单元测试（`.spec.ts` / `.test.ts`） | **0** | `tify-web/package.json` 没配 Vitest / Jest |
 | Maven surefire / failsafe 插件 | **未配置** | `mvn test` 实际什么都不做 |
 
 **结论：本项目没有任何自动化测试。**
@@ -22,13 +22,13 @@
 
 | Controller | 是否有测试 |
 |---|---|
-| `HealthController`（hify-app） | 没有 |
-| `ProviderController`（hify-provider） | 没有 |
-| `McpController`（hify-mcp） | 没有 |
-| `AgentController`（hify-agent） | 没有 |
-| `WorkflowController`（hify-workflow） | 没有 |
-| `KnowledgeController`（hify-knowledge） | 没有 |
-| `ChatController`（hify-chat） | 没有 |
+| `HealthController`（tify-app） | 没有 |
+| `ProviderController`（tify-provider） | 没有 |
+| `McpController`（tify-mcp） | 没有 |
+| `AgentController`（tify-agent） | 没有 |
+| `WorkflowController`（tify-workflow） | ✅ 有（`WorkflowCrudApiIntegrationTest`，6 场景：创建/详情/更新/删除/runs/missing 404） |
+| `KnowledgeController`（tify-knowledge） | 没有 |
+| `ChatController`（tify-chat） | 没有 |
 
 **7 个 Controller × 0 覆盖率**。
 
@@ -42,7 +42,7 @@
 | `ChatServiceImpl` | 没有 | 流式 SSE + 多轮上下文窗口，CLAUDE.md 重点 |
 | `AgentServiceImpl` | 没有 | 含 modelConfigId / knowledgeBaseId / workflowId 外键校验 |
 | `KnowledgeServiceImpl` | 没有 | 文档分块 + 向量检索 |
-| `WorkflowService` | 没有 | 节点执行顺序 + 条件分支 |
+| `WorkflowService` | ✅ 有 | 引擎集成测试 `WorkflowEngineIntegrationTest`（6 场景：线性/分支/节点失败/死循环/条件不匹配/输出解析）+ 单测 `ExecutionContextTest`/`ConditionNodeExecutorTest`/`NodeConfigParserTest`（15 个） |
 | `McpService` | 没有 | JSON-RPC 客户端 |
 
 **8 个核心 Service × 0 覆盖率**。

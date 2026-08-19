@@ -1,8 +1,8 @@
-# Hify 项目规范
+# Tify 项目规范
 
 ## 项目概述
 
-Hify 是一个简版的 AI Agent 开发平台（参考 Dify），可本地部署，面向团队内部小规模使用（20-50 人同时在线）。
+Tify 是一个简版的 AI Agent 开发平台（参考 Dify），可本地部署，面向团队内部小规模使用（20-50 人同时在线）。
 
 技术栈：Spring Boot 3.x + MyBatis-Plus + MySQL 8.x + Redis 7.x + pgvector
 前端：Vue 3 + TypeScript + Element Plus + Vite
@@ -33,26 +33,26 @@ Hify 是一个简版的 AI Agent 开发平台（参考 Dify），可本地部署
 
 ### 模块划分
 ```
-hify/
-├── hify-app/            # 启动模块，Spring Boot Application
-├── hify-provider/       # 模型提供商管理
-├── hify-agent/          # Agent 管理与配置
-├── hify-chat/           # 对话引擎
-├── hify-mcp/            # MCP 工具管理与调用
-├── hify-workflow/       # 工作流编排与执行
-├── hify-knowledge/      # 知识库与 RAG
-├── hify-common/         # 公共模块（工具类、常量、异常、DTO 基类）
-├── hify-web/            # Vue 前端
+tify/
+├── tify-app/            # 启动模块，Spring Boot Application
+├── tify-provider/       # 模型提供商管理
+├── tify-agent/          # Agent 管理与配置
+├── tify-chat/           # 对话引擎
+├── tify-mcp/            # MCP 工具管理与调用
+├── tify-workflow/       # 工作流编排与执行
+├── tify-knowledge/      # 知识库与 RAG
+├── tify-common/         # 公共模块（工具类、常量、异常、DTO 基类）
+├── tify-web/            # Vue 前端
 └── deploy/              # Docker + K8s 部署配置
 ```
 
 ### 模块依赖关系
-- hify-chat → hify-agent, hify-provider（对话时读取 Agent 配置和模型配置）
-- hify-chat → hify-workflow（对话可能触发工作流）
-- hify-chat → hify-knowledge（对话可能走 RAG 检索）
-- hify-agent → hify-mcp（Agent 绑定工具）
-- 所有业务模块 → hify-common
-- hify-app → 所有业务模块（启动入口）
+- tify-chat → tify-agent, tify-provider（对话时读取 Agent 配置和模型配置）
+- tify-chat → tify-workflow（对话可能触发工作流）
+- tify-chat → tify-knowledge（对话可能走 RAG 检索）
+- tify-agent → tify-mcp（Agent 绑定工具）
+- 所有业务模块 → tify-common
+- tify-app → 所有业务模块（启动入口）
 
 ### 外部调用处理
 - LLM 调用使用独立线程池（llmExecutor），和业务请求隔离
@@ -89,7 +89,7 @@ Nginx（静态文件 + API 反向代理）→ Spring Boot → MySQL / Redis / pg
 ### 后端模块内部结构
 每个业务模块统一结构：
 ```
-src/main/java/com/hify/{module}/
+src/main/java/com/phadcalc/llm/tify/{module}/
 ├── controller/        # REST 接口，只做参数校验和调用 Service
 ├── service/           # 业务逻辑接口
 ├── service/impl/      # 业务逻辑实现
@@ -105,11 +105,11 @@ src/main/java/com/hify/{module}/
 - Controller 只做参数校验和调用 Service，不写业务逻辑
 - Service 处理所有业务逻辑
 - 跨模块调用走 Service 接口，不直接引用其他模块的 Mapper 或 Entity
-- 公共工具类、基类放 hify-common
+- 公共工具类、基类放 tify-common
 
 ### 前端结构
 ```
-hify-web/src/
+tify-web/src/
 ├── api/               # 接口调用，按模块分文件
 ├── components/        # 公共组件
 ├── composables/       # 组合式函数

@@ -1,8 +1,8 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: hify-mysql-init
-  namespace: hify
+  name: tify-mysql-init
+  namespace: tify
 spec:
   backoffLimit: 3
   template:
@@ -18,7 +18,7 @@ spec:
             - |
               set -e
               for i in $(seq 1 60); do
-                if mysqladmin ping -h hify-mysql -uroot -p"$MYSQL_ROOT_PASSWORD" --silent; then
+                if mysqladmin ping -h tify-mysql -uroot -p"$MYSQL_ROOT_PASSWORD" --silent; then
                   echo "mysql ready"
                   exit 0
                 fi
@@ -28,7 +28,7 @@ spec:
               exit 1
           envFrom:
             - secretRef:
-                name: hify-mysql-secret
+                name: tify-mysql-secret
       containers:
         - name: init-schema
           image: mysql:8.0
@@ -39,40 +39,40 @@ spec:
             - -c
             - |
               set -e
-              echo "--- applying hify schema.sql ---"
-              mysql -h hify-mysql -uroot -p"$MYSQL_ROOT_PASSWORD" \
-                -e "CREATE DATABASE IF NOT EXISTS hify DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+              echo "--- applying tify schema.sql ---"
+              mysql -h tify-mysql -uroot -p"$MYSQL_ROOT_PASSWORD" \
+                -e "CREATE DATABASE IF NOT EXISTS tify DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
               # schema.sql 顶部有 CREATE DATABASE / USE，重复执行一次无害
               if [ -f /sql/schema.sql ]; then
-                mysql -h hify-mysql -uroot -p"$MYSQL_ROOT_PASSWORD" < /sql/schema.sql
+                mysql -h tify-mysql -uroot -p"$MYSQL_ROOT_PASSWORD" < /sql/schema.sql
               else
                 echo "WARN: /sql/schema.sql not found, schema 留空"
               fi
               # 关键生产 DDL 缺口提醒
               echo "--- NOTE: schema.sql only has 8 tables; knowledge/workflow DDL still missing in prod ---"
-              mysql -h hify-mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SHOW TABLES FROM hify;"
+              mysql -h tify-mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SHOW TABLES FROM tify;"
           envFrom:
             - secretRef:
-                name: hify-mysql-secret
+                name: tify-mysql-secret
           volumeMounts:
             - name: sql
               mountPath: /sql
       volumes:
         - name: sql
           configMap:
-            name: hify-mysql-schema
+            name: tify-mysql-schema
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: hify-mysql-schema
-  namespace: hify
+  name: tify-mysql-schema
+  namespace: tify
 data:
   schema.sql: |
-    -- Hify DDL (copied from hify-app/src/main/resources/db/schema.sql)
+    -- Tify DDL (copied from tify-app/src/main/resources/db/schema.sql)
     -- NOTE: 生产 schema.sql 仅 8 张表，详见 docs/data-model.md ⚠
-    CREATE DATABASE IF NOT EXISTS hify DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-    USE hify;
+    CREATE DATABASE IF NOT EXISTS tify DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    USE tify;
 
     CREATE TABLE IF NOT EXISTS provider (
         id          BIGINT          NOT NULL AUTO_INCREMENT COMMENT '主键',

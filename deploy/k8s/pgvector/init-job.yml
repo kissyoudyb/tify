@@ -1,8 +1,8 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: hify-pgvector-init
-  namespace: hify
+  name: tify-pgvector-init
+  namespace: tify
 spec:
   backoffLimit: 3
   template:
@@ -10,14 +10,14 @@ spec:
       restartPolicy: OnFailure
       initContainers:
         - name: wait-pg
-          image: pgvector/pgvector:pg16
+          image: registry.tjzs.com/library/pgvector:pg16
           command:
             - sh
             - -c
             - |
               set -e
               for i in $(seq 1 60); do
-                if pg_isready -h hify-pgvector -U "$POSTGRES_USER" -d "$POSTGRES_DB"; then
+                if pg_isready -h tify-pgvector -U "$POSTGRES_USER" -d "$POSTGRES_DB"; then
                   echo "pgvector ready"
                   exit 0
                 fi
@@ -27,33 +27,51 @@ spec:
               exit 1
           envFrom:
             - secretRef:
-                name: hify-pgvector-secret
+                name: tify-pgvector-secret
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tify-pgvector-secret
+                  key: POSTGRES_PASSWORD
       containers:
         - name: init-ext
-          image: pgvector/pgvector:pg16
+          image: registry.tjzs.com/library/pgvector:pg16
           command:
             - sh
             - -c
             - |
               set -e
               echo "--- creating vector extension ---"
-              psql -h hify-pgvector -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+              psql -h tify-pgvector -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
                 -c "CREATE EXTENSION IF NOT EXISTS vector;"
-              # 顺手占位一张 document_chunk 表（生产 DDL 仍待补）
-              psql -h hify-pgvector -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
-              CREATE TABLE IF NOT EXISTS document_chunk (
-                  id BIGSERIAL PRIMARY KEY,
-                  document_id BIGINT NOT NULL,
-                  chunk_index INT NOT NULL,
-                  content TEXT NOT NULL,
-                  embedding vector(1536),
-                  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+              # 重建 document_chunk：embedding 维度与嵌入模型保持一致（1024）
+              psql -h tify-pgvector -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
+              DROP TABLE IF EXISTS document_chunk;
+              CREATE TABLE document_chunk (
+                  id                 BIGSERIAL PRIMARY KEY,
+                  document_id        BIGINT NOT NULL,
+                  knowledge_base_id  BIGINT NOT NULL,
+                  chunk_index        INT NOT NULL,
+                  content            TEXT NOT NULL,
+                  token_count        INT NOT NULL DEFAULT 0,
+                  embedding          vector(1024) NOT NULL,
+                  created_at         TIMESTAMP NOT NULL DEFAULT NOW()
               );
-              CREATE INDEX IF NOT EXISTS idx_document_chunk_doc_id ON document_chunk(document_id);
+              CREATE INDEX idx_document_chunk_doc_id ON document_chunk(document_id);
+              CREATE INDEX idx_document_chunk_kb_id ON document_chunk(knowledge_base_id);
+              CREATE INDEX idx_document_chunk_embedding
+                  ON document_chunk USING hnsw (embedding vector_cosine_ops);
               SQL
               echo "--- done ---"
-              psql -h hify-pgvector -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\dt"
-              psql -h hify-pgvector -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\dx"
+              psql -h tify-pgvector -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\dt"
+              psql -h tify-pgvector -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\dx"
           envFrom:
             - secretRef:
-                name: hify-pgvector-secret
+                name: tify-pgvector-secret
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tify-pgvector-secret
+                  key: POSTGRES_PASSWORD

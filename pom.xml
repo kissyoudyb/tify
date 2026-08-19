@@ -4,22 +4,23 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.hify</groupId>
-    <artifactId>hify</artifactId>
+    <groupId>com.phadcalc.llm.tify</groupId>
+    <artifactId>tify</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>hify</name>
-    <description>Hify - AI Agent Development Platform</description>
+    <name>tify</name>
+    <description>Tify - AI Agent Development Platform</description>
 
     <modules>
-        <module>hify-common</module>
-        <module>hify-provider</module>
-        <module>hify-mcp</module>
-        <module>hify-agent</module>
-        <module>hify-workflow</module>
-        <module>hify-knowledge</module>
-        <module>hify-chat</module>
-        <module>hify-app</module>
+        <module>tify-common</module>
+        <module>tify-provider</module>
+        <module>tify-mcp</module>
+        <module>tify-mcp-refund</module>
+        <module>tify-agent</module>
+        <module>tify-workflow</module>
+        <module>tify-knowledge</module>
+        <module>tify-chat</module>
+        <module>tify-app</module>
     </modules>
 
     <properties>
@@ -29,7 +30,7 @@
         <maven.compiler.release>${java.version}</maven.compiler.release>
 
         <!-- Dependency versions -->
-        <spring-boot.version>3.2.3</spring-boot.version>
+        <spring-boot.version>3.4.5</spring-boot.version>
         <mybatis-plus.version>3.5.9</mybatis-plus.version>
         <mysql-connector.version>8.3.0</mysql-connector.version>
         <resilience4j.version>2.2.0</resilience4j.version>
@@ -123,38 +124,38 @@
 
             <!-- Internal modules -->
             <dependency>
-                <groupId>com.hify</groupId>
-                <artifactId>hify-common</artifactId>
+                <groupId>com.phadcalc.llm.tify</groupId>
+                <artifactId>tify-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.hify</groupId>
-                <artifactId>hify-provider</artifactId>
+                <groupId>com.phadcalc.llm.tify</groupId>
+                <artifactId>tify-provider</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.hify</groupId>
-                <artifactId>hify-mcp</artifactId>
+                <groupId>com.phadcalc.llm.tify</groupId>
+                <artifactId>tify-mcp</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.hify</groupId>
-                <artifactId>hify-agent</artifactId>
+                <groupId>com.phadcalc.llm.tify</groupId>
+                <artifactId>tify-agent</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.hify</groupId>
-                <artifactId>hify-workflow</artifactId>
+                <groupId>com.phadcalc.llm.tify</groupId>
+                <artifactId>tify-workflow</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.hify</groupId>
-                <artifactId>hify-knowledge</artifactId>
+                <groupId>com.phadcalc.llm.tify</groupId>
+                <artifactId>tify-knowledge</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.hify</groupId>
-                <artifactId>hify-chat</artifactId>
+                <groupId>com.phadcalc.llm.tify</groupId>
+                <artifactId>tify-chat</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

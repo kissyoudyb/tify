@@ -1,4 +1,4 @@
-# Hify REST 接口清单
+# Tify REST 接口清单
 
 > 来源：扫描所有 `*Controller.java`（不含 `package-info.java`），共 **8 个 controller**、**39 个接口**。
 > 基础路径：所有业务接口位于 `/api/v1/` 前缀下。
@@ -14,7 +14,7 @@ PageResult<T> { List<T> list; long total; int page; int pageSize; }
 
 ---
 
-## 1. hify-app · HealthController
+## 1. tify-app · HealthController
 `/api/v1/health`
 
 | 方法 | 路径 | 说明 | 主要入参 | 返回结构 |
@@ -23,7 +23,7 @@ PageResult<T> { List<T> list; long total; int page; int pageSize; }
 
 ---
 
-## 2. hify-provider · ProviderController
+## 2. tify-provider · ProviderController
 `/api/v1/providers`
 
 | 方法 | 路径 | 说明 | 主要入参 | 返回结构 |
@@ -37,7 +37,7 @@ PageResult<T> { List<T> list; long total; int page; int pageSize; }
 
 ---
 
-## 3. hify-mcp · McpController
+## 3. tify-mcp · McpController
 `/api/v1/mcp-servers`
 
 | 方法 | 路径 | 说明 | 主要入参 | 返回结构 |
@@ -53,7 +53,7 @@ PageResult<T> { List<T> list; long total; int page; int pageSize; }
 
 ---
 
-## 4. hify-agent · AgentController
+## 4. tify-agent · AgentController
 `/api/v1/agents`
 
 | 方法 | 路径 | 说明 | 主要入参 | 返回结构 |
@@ -67,7 +67,7 @@ PageResult<T> { List<T> list; long total; int page; int pageSize; }
 
 ---
 
-## 5. hify-workflow · WorkflowController
+## 5. tify-workflow · WorkflowController
 `/api/v1/workflows`
 
 | 方法 | 路径 | 说明 | 主要入参 | 返回结构 |
@@ -77,10 +77,13 @@ PageResult<T> { List<T> list; long total; int page; int pageSize; }
 | GET | `/api/v1/workflows/{id}` | 详情（含节点/连线） | `id` | `Result<WorkflowDetailVO>` |
 | PUT | `/api/v1/workflows/{id}` | 更新 | `id` + `WorkflowUpdateRequest` | `Result<WorkflowDetailVO>` |
 | DELETE | `/api/v1/workflows/{id}` | 删除 | `id` | `Result<Void>` |
+| GET | `/api/v1/workflows/{id}/runs` | 分页查询执行记录（按时间倒序） | `id`, `page, pageSize` | `Result<PageResult<WorkflowRunVO>>` |
+| GET | `/api/v1/workflows/{id}/runs/latest` | 最近一次执行记录（含节点明细） | `id` | `Result<WorkflowRunDetailVO>` |
+| GET | `/api/v1/workflows/{id}/runs/{runId}` | 指定执行记录（含节点明细） | `id`, `runId` | `Result<WorkflowRunDetailVO>` |
 
 ---
 
-## 6. hify-knowledge · KnowledgeController
+## 6. tify-knowledge · KnowledgeController
 `/api/v1/knowledge-bases` 和 `/api/v1/documents`（两个资源前缀）
 
 ### 知识库
@@ -105,7 +108,7 @@ PageResult<T> { List<T> list; long total; int page; int pageSize; }
 
 ---
 
-## 7. hify-chat · ChatController
+## 7. tify-chat · ChatController
 `/api/v1/chat`
 
 ### 会话
@@ -146,13 +149,13 @@ PageResult<T> { List<T> list; long total; int page; int pageSize; }
 
 | 模块 | Controller | 接口数 |
 |---|---|---|
-| hify-app | HealthController | 1 |
-| hify-provider | ProviderController | 6 |
-| hify-mcp | McpController | 8 |
-| hify-agent | AgentController | 6 |
-| hify-workflow | WorkflowController | 5 |
-| hify-knowledge | KnowledgeController | 10 |
-| hify-chat | ChatController | 6 |
-| **合计** | **7** | **42** |
+| tify-app | HealthController | 1 |
+| tify-provider | ProviderController | 6 |
+| tify-mcp | McpController | 8 |
+| tify-agent | AgentController | 6 |
+| tify-workflow | WorkflowController | 8 |
+| tify-knowledge | KnowledgeController | 10 |
+| tify-chat | ChatController | 6 |
+| **合计** | **7** | **45** |
 
-> 注：HealthController 1 + Provider 6 + Mcp 8 + Agent 6 + Workflow 5 + Knowledge 10 + Chat 6 = **42**。
+> 注：HealthController 1 + Provider 6 + Mcp 8 + Agent 6 + Workflow 8 + Knowledge 10 + Chat 6 = **45**。

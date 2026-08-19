@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tify-mcp-refund-config
+  namespace: tify
+data:
+  # ── MySQL（tify_refund 独立 schema，与主库同实例）──
+  DB_HOST:     "tify-mysql"
+  DB_PORT:     "3306"
+  DB_NAME:     "tify_refund"
+  DB_USERNAME: "tify"
+
+  # ── 应用 ──────────────────────────────────────────────────────
+  SERVER_PORT: "9001"
+  TZ:          "Asia/Shanghai"
+  JVM_OPTS:    "-Xms128m -Xmx256m -Duser.timezone=Asia/Shanghai"

@@ -1,0 +1,61 @@
+# ─────────────────────────────────────────────────────────────
+# tify-mcp-refund · 本地构建版（复用宿主机已打好的 jar）
+#
+# 构建用法：
+#   docker build -f Dockerfile.refund \
+#     --build-arg JAR_FILE=tify-mcp-refund/target/tify-mcp-refund-0.0.1-SNAPSHOT.jar \
+#     -t registry.tjzs.com/phadagent/tify-mcp-refund:<tag> .
+# ─────────────────────────────────────────────────────────────
+ARG JAR_FILE=tify-mcp-refund/target/tify-mcp-refund-0.0.1-SNAPSHOT.jar
+
+# 私服基础镜像（registry.tjzs.com），如需改回公网把 library 前缀去掉即可
+ARG BASE_IMAGE=registry.tjzs.com/library/eclipse-temurin:17-jre-alpine
+ARG BUILDER_IMAGE=registry.tjzs.com/library/eclipse-temurin:17-jdk
+
+# ── Stage 1: Extract Spring Boot layers ───────────────────────
+FROM ${BUILDER_IMAGE} AS builder
+
+ARG JAR_FILE
+WORKDIR /build
+
+# 复制本地打好的 fat jar
+COPY ${JAR_FILE} /build/app.jar
+
+# 用 layertools 把 jar 拆成 4 层（依赖/loader/snapshot/application）
+RUN java -Djarmode=layertools \
+        -jar /build/app.jar extract \
+        --destination /build/layers
+
+# ── Stage 2: Runtime ─────────────────────────────────────────
+FROM ${BASE_IMAGE}
+
+# 非 root 用户 + 时区数据
+RUN apk add --no-cache tzdata \
+    && addgroup -S tify \
+    && adduser -S tify -G tify
+
+WORKDIR /app
+
+COPY --from=builder --chown=tify:tify /build/layers/dependencies/           ./
+COPY --from=builder --chown=tify:tify /build/layers/spring-boot-loader/     ./
+COPY --from=builder --chown=tify:tify /build/layers/snapshot-dependencies/  ./
+COPY --from=builder --chown=tify:tify /build/layers/application/            ./
+
+VOLUME ["/app/config", "/app/logs"]
+
+USER tify
+
+EXPOSE 9001
+
+ENV TZ=Asia/Shanghai \
+    SERVER_PORT=9001 \
+    JVM_OPTS="-Xms128m -Xmx256m -Duser.timezone=Asia/Shanghai"
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD wget -qO- http://localhost:${SERVER_PORT}/health || exit 1
+
+ENTRYPOINT ["sh", "-c", \
+  "exec java ${JVM_OPTS} \
+    -Djava.security.egd=file:/dev/./urandom \
+    org.springframework.boot.loader.launch.JarLauncher \
+    --spring.config.additional-location=optional:file:/app/config/application.yml"]

@@ -2,7 +2,7 @@
 set -uo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PID_FILE="$ROOT_DIR/hify.pid"
+PID_FILE="$ROOT_DIR/tify.pid"
 TERM_TIMEOUT=30
 
 RED='\033[0;31m'
@@ -15,7 +15,7 @@ warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 error() { echo -e "${RED}[ERROR]${NC} $*" >&2; }
 
 if [[ ! -f "$PID_FILE" ]]; then
-  warn "PID 文件不存在（$PID_FILE），Hify 可能未在运行"
+  warn "PID 文件不存在（$PID_FILE），Tify 可能未在运行"
   exit 0
 fi
 
@@ -27,7 +27,7 @@ if ! kill -0 "$PID" 2>/dev/null; then
   exit 0
 fi
 
-info "正在停止 Hify（PID=${PID}）..."
+info "正在停止 Tify（PID=${PID}）..."
 kill -TERM "$PID" 2>/dev/null
 
 elapsed=0
@@ -44,4 +44,4 @@ done
 echo
 
 rm -f "$PID_FILE"
-info "✅ Hify 已停止"
+info "✅ Tify 已停止"

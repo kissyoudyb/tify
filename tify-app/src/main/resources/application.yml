@@ -1,0 +1,105 @@
+server:
+  port: 8080
+
+management:
+  server:
+    port: 8081          # Actuator 独立端口，不通过 Nginx 对外暴露
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: tify   # 所有指标自动带 application=tify 标签
+
+spring:
+  jackson:
+    time-zone: Asia/Shanghai
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:tify}?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      lettuce:
+        pool:
+          min-idle: 2
+          max-active: 10
+          max-idle: 8
+          max-wait: -1ms
+
+  pgvector:
+    host: ${PGVECTOR_HOST:}
+    port: ${PGVECTOR_PORT:5432}
+    database: ${PGVECTOR_DB:tify}
+    username: ${PGVECTOR_USERNAME:}
+    password: ${PGVECTOR_PASSWORD:}
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      llm-default:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        register-health-indicator: true
+  retry:
+    configs:
+      timeout-retry:
+        max-attempts: 3           # 首次 + 重试 2 次
+        wait-duration: 1s
+        retry-exceptions:
+          - java.net.SocketTimeoutException
+          - com.phadcalc.llm.tify.common.http.LlmApiException
+      rate-limit-retry:
+        max-attempts: 3
+        exponential-backoff-multiplier: 2
+        wait-duration: 2s         # 首次 2s，第二次 4s
+        retry-exceptions:
+          - com.phadcalc.llm.tify.common.http.LlmApiException
+
+# ── Tify 自定义配置 ─────────────────────────────────────────
+# ProviderHealthCheckTask（每 60s 一轮连通性测试）默认开启（matchIfMissing=true）。
+# 模型同步已由 ProviderConnectionTestService.refreshModels 幂等处理，
+# 但周期探测会产生多余的外部 LLM 调用与日志噪音，这里显式关闭；
+# 需要时在 deploy 脚本 / 环境变量里覆盖为 true 即可。
+tify:
+  health-check:
+    enabled: false
+
+  # ── 向量嵌入模型（OpenAI 兼容 /v1/embeddings）─────────────
+  embedding:
+    base-url: ${EMBEDDING_BASE_URL:http://192.168.130.220:8004}
+    model: ${EMBEDDING_MODEL:Qwen3-Embedding-0.6B}
+    api-key: ${EMBEDDING_API_KEY:}
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.phadcalc.llm.tify.*.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
